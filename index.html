@@ -459,6 +459,7 @@
     <div class="slot" id="slot">想吃啥？</div>
     <div class="eat-reason" id="eatReason"></div>
     <button class="btn block" id="decideBtn">🤖 AI 帮我决定！</button>
+    <button class="btn block ghost" id="randomDishBtn" style="margin-top:8px;">🎲 不知道吃啥？随机推荐新菜</button>
     <div class="editor" style="margin-top:12px;">
       <div class="row">
         <input id="foodInput" placeholder="给当前分类加一道菜，如：麻辣香锅" />
@@ -641,7 +642,7 @@
       </div>
       <div class="chip-list" id="taskCustomList"></div>
     </div>
-    <details class="log-box" id="taskDoneBox" style="margin-top:12px;">
+    <details class="log-box" id="taskDoneBox" style="margin-top:12px;" open>
       <summary>✅ 已完成清单 <span class="cnt" id="taskDoneCnt">0</span></summary>
       <div class="log-list" id="taskDoneList"></div>
       <button class="btn ghost small clear" id="clearTaskDone">清空已完成</button>
@@ -773,7 +774,50 @@ function loadScript(src, cb){ const s=document.createElement('script'); s.src=sr
   s.onerror=()=>{ toast('同步组件加载失败，可用「手动备份」同步'); cb&&cb(); }; document.head.appendChild(s); }
 const SYNC_ARRAY_KEYS = ['gfapp_records','gfapp_prizes','gfapp_foods','gfapp_gifts','gfapp_photos','gfapp_fortune_yi','gfapp_fortune_ji','gfapp_anniversaries','gfapp_achieved','gfapp_festivals','gfapp_diary','gfapp_praiseCustom','gfapp_sos','gfapp_capsules','gfapp_periodDates','gfapp_taskCustom','gfapp_taskDone'];
 // 积分为每台设备各自的「宠爱值」，不同步（避免两端互相覆盖）；连接配置为本机私有，也不同步
-const SYNC_SKIP = ['gfapp_points','gfapp_sync_conf','gfapp_sb_conf','gfapp_wheel_date','gfapp_nickname','gfapp_device_id'];
+const SYNC_SKIP = ['gfapp_points','gfapp_sync_conf','gfapp_sb_conf','gfapp_wheel_date','gfapp_nickname','gfapp_device_id','gfapp_sync_v'];
+// —— 同步核心：集合（数组/对象）按元素「并集合并」，标量才「最后写入者胜」——
+// 这样两端各自新增的数据都能出现（点菜记录/照片/已完成清单/日记/夸夸…），
+// 同时用「删除墓碑」让删除也能跨端传播（避免之前「删了又冒出来」）。
+function arrUnion(a,b){ const seen=new Set((a||[]).map(x=>JSON.stringify(x))); const out=(a||[]).slice(); (b||[]).forEach(x=>{ const s=JSON.stringify(x); if(!seen.has(s)) out.push(x); }); return out; }
+function mergeValues(a,b){
+  if(Array.isArray(a)&&Array.isArray(b)) return arrUnion(a,b);
+  if(a&&typeof a==='object'&&!Array.isArray(a)&&b&&typeof b==='object'&&!Array.isArray(b)){
+    const out={}; const keys=new Set([...Object.keys(a),...Object.keys(b)]);
+    keys.forEach(k=>{ if(Array.isArray(a[k])&&Array.isArray(b[k])) out[k]=arrUnion(a[k],b[k]); else out[k]=(b[k]!==undefined?b[k]:a[k]); });
+    return out;
+  }
+  return b;
+}
+const TOMB_KEY='gfapp_tomb';
+const TOMB_ID={
+  'gfapp_diary':e=>e&&e.date?e.date:'',
+  'gfapp_menuLog':e=>e&&e.t&&e.p?(e.t+'|'+e.p):JSON.stringify(e),
+  'gfapp_praiseCustom':e=>e,
+  'gfapp_taskCustom':e=>e,
+  'gfapp_sos':e=>e&&e.t?e.t:'',
+  'gfapp_capsules':e=>e&&e.t?e.t:'',
+  'gfapp_records':e=>e,
+  'gfapp_prizes':e=>e,
+  'gfapp_anniversaries':e=>JSON.stringify(e),
+  'gfapp_achieved':e=>e,
+  'gfapp_festivals':e=>e&&e.id!=null?(''+e.id):JSON.stringify(e),
+  'gfapp_fortune_yi':e=>e,
+  'gfapp_fortune_ji':e=>e,
+  'gfapp_periodDates':e=>e,
+  'gfapp_taskDone':e=>e,
+  'gfapp_photos':e=>e,
+  'gfapp_foods':null
+};
+function tombId(key,el){ const f=TOMB_ID[key]; if(f===null||f===undefined) return null; return (typeof f==='function')?f(el):JSON.stringify(el); }
+function getTomb(){ try{ return JSON.parse(localStorage.getItem(TOMB_KEY)||'[]'); }catch(e){ return []; } }
+function markDeleted(key,id){ if(id==null||id==='') return; const t=getTomb(); const m=key+'::'+id; if(!t.includes(m)){ t.push(m); localStorage.setItem(TOMB_KEY,JSON.stringify(t)); bumpVfull(TOMB_KEY); try{ if(typeof relay!=='undefined'&&relay.hasConf()) relay.push(); }catch(e){} } }
+function applyTomb(key,val){
+  const f=TOMB_ID[key]; if(f===null) return val;
+  const t=getTomb();
+  if(Array.isArray(val)) return val.filter(x=>!t.includes(key+'::'+tombId(key,x)));
+  if(val&&typeof val==='object'){ const out={}; for(const k in val){ if(!t.includes(key+'::'+k)) out[k]=val[k]; } return out; }
+  return val;
+}
 function snapshot(){
   const data={}, v=store.vmap();
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('gfapp_') && !SYNC_SKIP.includes(k)) data[k]=localStorage.getItem(k); }
@@ -788,19 +832,29 @@ function mergeSnap(snap){
   const incV = snap.v||{}, myV = store.vmap(), data = snap.data;
   for(const k in data){
     if(SYNC_SKIP.includes(k)) continue; // 积分等每台设备独立，跳过
-    // 所有键一律「按键最后写入者胜」：谁的时间戳新，谁的整份值（含删除）覆盖对方。
-    // 这样一端删除条目后，对方拉取时会整份采纳这份「已删除」的值，删除得以真正同步，
-    // 不会再像并集那样把删掉的条目又并回来。时间戳相同则用值本身对称决胜，保证两端收敛。
+    if(k===TOMB_KEY){ // 墓碑本身：并集合并，确保各端删除都能传播
+      try{ const mine=getTomb(); const theirs=JSON.parse(data[k]||'[]'); const set=new Set(mine); theirs.forEach(x=>set.add(x)); localStorage.setItem(TOMB_KEY, JSON.stringify([...set])); bumpVfull(TOMB_KEY); }catch(e){}
+      continue;
+    }
     const tsIn = incV[k]||0, tsMy = myV[k]||0;
-    const localStr = localStorage.getItem(k) || '';
-    const win = (tsIn > tsMy) || (tsIn===tsMy && data[k] > localStr);
-    if(win){ localStorage.setItem(k, data[k]); setVfull(k, tsIn||Date.now()); }
+    let lv=null, iv=null;
+    try{ lv=JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ lv=null; }
+    try{ iv=JSON.parse(data[k]); }catch(e){ iv=null; }
+    // 集合（数组/对象）：无论时间戳如何，都做并集合并，保证两端数据都出现
+    if(lv && iv && ((Array.isArray(lv)&&Array.isArray(iv)) || (lv&&typeof lv==='object'&&iv&&typeof iv==='object'))){
+      let merged = mergeValues(lv, iv); merged = applyTomb(k, merged);
+      localStorage.setItem(k, JSON.stringify(merged)); bumpVfull(k); continue;
+    }
+    // 标量/单值：最后写入者胜（时间戳新者优先，相同则取传入值，保证两端收敛）
+    const win = (tsIn > tsMy) || (tsIn===tsMy && data[k] > (localStorage.getItem(k)||''));
+    if(win){ localStorage.setItem(k, data[k]); bumpVfull(k); }
   }
 }
 function refreshAll(){
   try{
     wheel.prizes = store.get('prizes', ['奶茶一杯','免家务一次','拥抱10秒','陪逛街','晚饭我做','按摩5分钟']); wheel.renderChips(); wheel.draw();
     menu.foods = store.get('foods', null); menu.normalizeFoods(false); menu.renderFoods();
+    menu.log = store.get('menuLog', []); menu.renderLog();
     sign.records = store.get('records', []); sign.render();
     love.list = store.get('anniversaries', []); love.render();
     fortune.yi = store.get('fortune_yi', ['撒娇','黏着你','吃甜品','说我爱你','一起散步','自拍','赖床','逛街','收礼物','窝沙发']);
@@ -984,6 +1038,7 @@ const DEFAULT_FOODS = {
   晚餐:['火锅','炒菜套餐','寿司','披萨','沙拉轻食','牛肉面'],
   夜宵:['烧烤','关东煮','泡面','炸鸡','水果捞']
 };
+const EXTRA_DISHES = ['麻辣香锅','酸菜鱼','水煮肉片','宫保鸡丁','糖醋里脊','鱼香肉丝','剁椒鱼头','毛血旺','干锅虾','烤鱼','小炒黄牛肉','回锅肉','麻婆豆腐','煲仔饭','肠粉','生煎包','小笼包','灌汤包','煎饼果子','肉夹馍','凉皮','羊肉泡馍','刀削面','biangbiang面','热干面','重庆小面','炸酱面','葱油拌面','砂锅粥','皮蛋瘦肉粥','港式菠萝油','西多士','蛋挞','可丽饼','华夫饼','班戟','提拉米苏','芝士蛋糕','舒芙蕾','脏脏包','贝果','巴斯克蛋糕','寿喜锅','部队锅','泡菜锅','冬阴功','泰式炒河粉','日式咖喱','亲子丼','牛肉乌冬','天妇罗','拉面','担担面','钟水饺','红油抄手','冰粉','醪糟汤圆','龟苓膏','烧仙草','双皮奶','杨枝甘露','姜撞奶','绿豆沙','银耳羹','酒酿圆子','卤味拼盘','盐水鸭','白切鸡','豉油鸡','盐焗鸡','烤鸭','酱骨头','糖醋小排','红烧肉','东坡肉','粉蒸肉','梅菜扣肉','狮子头','佛跳墙','干煸豆角','地三鲜','手撕包菜','酸辣土豆丝','孜然羊肉','烤羊排','小龙虾','蒜蓉粉丝虾','清蒸鲈鱼','菠萝咕咾肉','三杯鸡','卤肉饭','蚵仔煎','盐酥鸡','珍珠奶茶','芋泥啵啵','烧仙草奶茶','椰子鸡','猪肚鸡','啫啫煲','砂锅鱼头','油焖大虾','辣子鸡','叫花鸡','蚵仔面线','刈包','碗粿','葱抓饼','鸡蛋灌饼','手抓饼','胡辣汤','小馄饨','大馄饨','鸭血粉丝汤','牛肉粉丝','瓦罐汤','猪脚饭','叉烧饭','海南鸡饭','椰浆饭'];
 const menu = {
   cats:['早餐','午餐','晚餐','夜宵'], cur:'午餐',
   foods:store.get('foods', null),
@@ -1016,6 +1071,7 @@ const menu = {
   },
   bind(){
     $('#decideBtn').onclick=()=>this.decide();
+    $('#randomDishBtn').onclick=()=>this.randomDish();
     $('#addFood').onclick=()=>{ const v=$('#foodInput').value.trim(); if(!v)return; this.normalizeFoods(false);
       if(this.foods[this.cur].includes(v)){ toast('已经有这道菜啦'); return; }
       this.foods[this.cur].push(v); store.set('foods',this.foods); $('#foodInput').value=''; this.renderFoods(); toast('已加到「'+this.cur+'」🍱'); };
@@ -1064,6 +1120,17 @@ const menu = {
         self.pushLog(pick); if(typeof achievements!=='undefined') achievements.add(1);
         toast('就吃 '+pick+' 吧！'); }
     },70);
+  },
+  // 不知道吃啥时：随机推荐一道「菜单里没有」的菜（也记进点菜记录）
+  randomDish(){
+    const inMenu = new Set(Object.values(this.foods).reduce((a,b)=>a.concat(b),[]));
+    let pool = EXTRA_DISHES.filter(d=>!inMenu.has(d));
+    if(pool.length===0) pool = EXTRA_DISHES;
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    const slot=$('#slot'); if(slot){ slot.classList.add('rolling'); setTimeout(()=>{ slot.classList.remove('rolling'); slot.textContent=pick; }, 350); }
+    const rEl=$('#eatReason'); if(rEl) rEl.textContent='🎲 换个没吃过的：'+pick+'，说不定就合胃口～';
+    this.pushLog(pick); if(typeof achievements!=='undefined') achievements.add(1);
+    toast('不如试试 '+pick+'？');
   },
   pushLog(food){
     const t=new Date();
@@ -1389,7 +1456,7 @@ const diary = {
     const arr=(this.list||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
     arr.forEach(d=>{ const div=document.createElement('div'); div.className='diary-item';
       div.innerHTML='<button class="diary-del">✕</button><div class="diary-date">'+d.date+(d.title?(' · '+escapeHtml(d.title)):'')+'</div><div class="diary-text">'+escapeHtml(d.text)+'</div>';
-      div.querySelector('.diary-del').onclick=()=>{ this.list=this.list.filter(x=>x.date!==d.date); store.set('diary',this.list); this.render(); };
+      div.querySelector('.diary-del').onclick=()=>{ this.list=this.list.filter(x=>x.date!==d.date); store.set('diary',this.list); markDeleted('gfapp_diary', d.date); this.render(); };
       box.appendChild(div); }); }
 };
 
@@ -1420,7 +1487,7 @@ const sos = {
     $('#sosCopy').onclick=()=>{ const t=$('#sosMsg').textContent; if(navigator.clipboard) navigator.clipboard.writeText(t); toast('已复制，去微信发给 TA 💗'); };
     $('#addCapsule').onclick=()=>{ const text=$('#capsuleText').value.trim(); const reveal=$('#capsuleDate').value; if(!text||!reveal){ toast('写点话并选个揭晓日期 💌'); return; }
       const list=store.get('capsules',[]); list.push({text,reveal}); store.set('capsules',list); $('#capsuleText').value=''; $('#capsuleDate').value=''; this.render(); toast('胶囊已封存 💌'); };
-    $('#sosAck').onclick=()=>{ const list=store.get('sos',[]).filter(s=>s.from===DEV); store.set('sos',list); this.render(); if(typeof home!=='undefined') home.render(); if(typeof sync!=='undefined') sync.send({kind:'ack'}); toast('已联系 💗'); };
+    $('#sosAck').onclick=()=>{ const all=store.get('sos',[]); const removed=all.filter(s=>s.from!==DEV); const list=all.filter(s=>s.from===DEV); store.set('sos',list); removed.forEach(s=>markDeleted('gfapp_sos', s.t)); this.render(); if(typeof home!=='undefined') home.render(); if(typeof sync!=='undefined') sync.send({kind:'ack'}); toast('已联系 💗'); };
   },
   alarm(){
     try{
@@ -1498,7 +1565,7 @@ const task = {
   renderChips(){
     const box=$('#taskCustomList'); if(!box)return; box.innerHTML='';
     this.custom.forEach((p,i)=>{ const c=document.createElement('span'); c.className='chip'; c.innerHTML=escapeHtml(p)+' <b data-i="'+i+'">✕</b>';
-      c.querySelector('b').onclick=()=>{ this.custom.splice(i,1); store.set('taskCustom',this.custom); this.renderChips(); this.render(); this.renderHome(); };
+      c.querySelector('b').onclick=()=>{ this.custom.splice(i,1); store.set('taskCustom',this.custom); markDeleted('gfapp_taskCustom', p); this.renderChips(); this.render(); this.renderHome(); };
       box.appendChild(c); });
   },
   render(){
@@ -1701,7 +1768,7 @@ const photo = {
     if(keys.length===0){ box.innerHTML='<div class="cal-note">还没有照片，拍第一张吧 📷</div>'; return; }
     keys.forEach(k=>{ const cell=document.createElement('div'); cell.className='photo-cell';
       cell.innerHTML='<img src="'+this.data[k]+'" alt=""/><div class="pd">'+k.slice(5)+'</div><button class="pdel">✕</button>';
-      cell.querySelector('.pdel').onclick=()=>{ delete this.data[k]; store.set('photos',this.data); this.render(); };
+      cell.querySelector('.pdel').onclick=()=>{ delete this.data[k]; store.set('photos',this.data); markDeleted('gfapp_photos', k); this.render(); };
       box.appendChild(cell); });
   }
 };
@@ -1755,9 +1822,20 @@ const relay = {
       const keys=new Set([...Object.keys(shared.data), ...Object.keys(local.data)]);
       for(const k of keys){
         if(SYNC_SKIP.includes(k)) continue;
+        if(k===TOMB_KEY){ // 墓碑：并集合并
+          try{ const mine=local.data[k]?JSON.parse(local.data[k]||'[]'):[]; const theirs=shared.data[k]?JSON.parse(shared.data[k]||'[]'):[]; const set=new Set(mine); theirs.forEach(x=>set.add(x)); mergedData[k]=JSON.stringify([...set]); mergedV[k]=Math.max(local.v[k]||0, shared.v[k]||0); }catch(e){}
+          continue;
+        }
         const lt=local.v[k]||0, st=shared.v[k]||0;
-        // 按键「最后写入者胜」：谁改得晚，谁整份值（含删除）覆盖对方。
-        // 只覆盖被改动过的键，未改动的键保持对方的值，因此不同模块互不影响，删除也能正确同步。
+        // 集合（数组/对象）：并集合并（含墓碑过滤），确保两端数据都出现、删除也传播
+        try{
+          const lj = local.data[k]!=null?JSON.parse(local.data[k]):null;
+          const sj = shared.data[k]!=null?JSON.parse(shared.data[k]):null;
+          if(lj && sj && ((Array.isArray(lj)&&Array.isArray(sj)) || (lj&&typeof lj==='object'&&sj&&typeof sj==='object'))){
+            let m=mergeValues(lj, sj); m=applyTomb(k, m); mergedData[k]=JSON.stringify(m); mergedV[k]=Math.max(lt,st); continue;
+          }
+        }catch(e){}
+        // 标量/单值：最后写入者胜
         const lv = local.data[k]!=null?local.data[k]:shared.data[k];
         const sv = shared.data[k]!=null?shared.data[k]:local.data[k];
         const win = (lt>st) || (lt===st && lv>=sv);
