@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>💕 给最爱的你</title>
+<style>
+  :root{
+    --bg1:#fff0f5;        /*  LavenderBlush  */
+    --bg2:#ffe4ec;        /*  浅粉  */
+    --card:#ffffff;
+    --pink:#ff7aa2;
+    --pink-deep:#ff4d79;
+    --pink-soft:#ffd6e3;
+    --text:#5a3a47;
+    --text-soft:#9b7c88;
+    --gold:#ffb454;
+    --shadow:0 10px 30px rgba(255,122,162,.18);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+    color:var(--text);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* 浮动爱心背景 */
+  .hearts{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .hearts span{position:absolute;bottom:-40px;font-size:20px;opacity:.5;animation:floatUp linear infinite;}
+  @keyframes floatUp{
+    0%{transform:translateY(0) rotate(0);opacity:0;}
+    10%{opacity:.6;}
+    100%{transform:translateY(-110vh) rotate(360deg);opacity:0;}
+  }
+  .app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:18px 16px 96px;}
+
+  /* 头部 */
+  header{text-align:center;margin-bottom:14px;}
+  header .title{font-size:26px;font-weight:800;letter-spacing:1px;
+    background:linear-gradient(90deg,var(--pink-deep),var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  header .sub{font-size:13px;color:var(--text-soft);margin-top:4px;}
+  .name-edit{margin-top:10px;display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.7);border:1px solid var(--pink-soft);border-radius:999px;padding:5px 12px;}
+  .name-edit input{border:none;background:transparent;outline:none;font-size:13px;color:var(--text);width:90px;text-align:center;}
+  .name-edit button{border:none;background:var(--pink);color:#fff;border-radius:999px;font-size:12px;padding:3px 10px;cursor:pointer;}
+
+  /* 卡片 */
+  .card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);
+    padding:18px;margin-bottom:16px;display:none;}
+  .card.active{display:block;animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .card h2{margin:0 0 14px;font-size:18px;display:flex;align-items:center;gap:8px;}
+  .card h2 .ic{font-size:20px;}
+
+  .btn{border:none;border-radius:14px;padding:12px 18px;font-size:15px;font-weight:700;
+    color:#fff;background:linear-gradient(90deg,var(--pink),var(--pink-deep));cursor:pointer;
+    box-shadow:0 6px 16px rgba(255,77,121,.3);transition:transform .1s;}
+  .btn:active{transform:scale(.96);}
+  .btn.ghost{background:#fff;color:var(--pink-deep);border:1.5px solid var(--pink-soft);box-shadow:none;}
+  .btn.block{width:100%;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* 转盘 */
+  .wheel-wrap{position:relative;width:300px;height:300px;margin:0 auto 18px;}
+  .wheel-wrap canvas{border-radius:50%;box-shadow:0 8px 24px rgba(255,77,121,.25);}
+  .pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;
+    border-top:26px solid var(--pink-deep);filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));z-index:3;}
+  .hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:58px;height:58px;border-radius:50%;background:#fff;z-index:2;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--pink-deep);
+    box-shadow:0 4px 10px rgba(0,0,0,.12);cursor:pointer;border:3px solid var(--pink-soft);transition:.2s;}
+  .hub.used{background:#eee;color:#bbb;border-color:#eee;box-shadow:none;cursor:not-allowed;}
+  .hub.locked{background:#eee;color:#bbb;border-color:#eee;box-shadow:none;cursor:not-allowed;}
+  .result{text-align:center;min-height:26px;font-size:18px;font-weight:800;color:var(--pink-deep);margin-bottom:12px;}
+
+  .editor{margin-top:14px;}
+  .editor .row{display:flex;gap:8px;margin-bottom:8px;}
+  .editor input{flex:1;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px 12px;font-size:14px;outline:none;}
+  .editor input:focus{border-color:var(--pink);}
+  .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  /* 记录折叠面板 */
+  .log-box{margin-top:16px;border:1.5px solid var(--pink-soft);border-radius:14px;background:#fff;overflow:hidden;}
+  .log-box>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:14px;font-weight:700;color:var(--pink-deep);display:flex;align-items:center;justify-content:space-between;}
+  .log-box>summary::-webkit-details-marker{display:none;}
+  .log-box>summary .cnt{font-size:12px;color:var(--text-soft);font-weight:600;}
+  .log-list{max-height:220px;overflow-y:auto;padding:0 14px 6px;}
+  .log-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px dashed var(--pink-soft);font-size:13px;}
+  .log-item:first-child{border-top:none;}
+  .log-item .t{color:var(--text-soft);font-size:12px;white-space:nowrap;}
+  .log-item .p{font-weight:700;color:#5a3a47;flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .log-empty{padding:14px;color:var(--text-soft);font-size:13px;text-align:center;}
+  .log-box .clear{margin:6px 14px 12px;}
+
+  /* 首页仪表盘 */
+  .home-hero{text-align:center;padding:6px 0 14px;}
+  .home-greet{font-size:20px;font-weight:800;color:var(--pink-deep);line-height:1.4;}
+  .home-card{background:#fff;border:1.5px solid var(--pink-soft);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 6px 18px rgba(255,77,121,.08);}
+  .hc-label{font-size:13px;font-weight:700;color:var(--text-soft);margin-bottom:8px;}
+  .hc-big{font-size:40px;font-weight:900;color:var(--pink-deep);text-align:center;line-height:1.1;}
+  .hc-sub{text-align:center;font-size:13px;color:var(--text-soft);margin-top:6px;}
+  .hc-line{font-size:19px;font-weight:800;color:#5a3a47;text-align:center;line-height:1.5;padding:4px 0;}
+  .hc-yiji{text-align:center;font-size:13px;color:var(--text-soft);margin-top:6px;}
+  .hc-yiji b{color:var(--pink-deep);}
+  .mood-text{font-size:15px;color:#5a3a47;line-height:1.6;min-height:22px;white-space:pre-wrap;word-break:break-word;}
+  .mood-input{display:none;width:100%;min-height:64px;margin-top:8px;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px;font-size:14px;resize:vertical;outline:none;font-family:inherit;}
+  .mood-input:focus{border-color:var(--pink);}
+  .diary-area{display:block;width:100%;min-height:84px;margin-top:8px;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px;font-size:14px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box;}
+  .diary-area:focus{border-color:var(--pink);}
+  .diary-title{display:block;width:100%;margin-top:8px;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box;}
+  .diary-title:focus{border-color:var(--pink);}
+  .mood-acts{display:flex;gap:8px;margin-top:8px;}
+  .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px;}
+  .home-grid button{border:none;background:#fff;border:1.5px solid var(--pink-soft);border-radius:14px;padding:14px 6px;font-size:14px;font-weight:700;color:var(--pink-deep);cursor:pointer;box-shadow:0 4px 12px rgba(255,77,121,.06);transition:.15s;}
+  .home-grid button:active{transform:scale(.96);background:var(--pink-soft);}
+  .chip{background:var(--pink-soft);color:var(--pink-deep);border-radius:999px;padding:6px 12px;font-size:13px;
+    display:inline-flex;align-items:center;gap:6px;}
+  .chip b{cursor:pointer;font-weight:800;}
+
+  /* 菜单 */
+  .cats{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .cat{flex:1;min-width:64px;text-align:center;padding:9px 0;border-radius:14px;background:#fff;
+    border:1.5px solid var(--pink-soft);color:var(--text-soft);font-size:14px;font-weight:700;cursor:pointer;}
+  .cat.on{background:linear-gradient(90deg,var(--pink),var(--pink-deep));color:#fff;border-color:transparent;}
+  .slot{height:120px;border-radius:18px;background:linear-gradient(160deg,#fff7fa,#ffe9f1);
+    border:1.5px dashed var(--pink-soft);display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:800;color:var(--pink-deep);margin-bottom:14px;overflow:hidden;position:relative;}
+  .slot.rolling{animation:wob .12s linear infinite;}
+  @keyframes wob{0%{transform:translateY(0)}100%{transform:translateY(-6px)}}
+
+  /* 签到 */
+  .stats{display:flex;gap:10px;margin-bottom:14px;}
+  .stat{flex:1;background:linear-gradient(160deg,#fff7fa,#ffe9f1);border-radius:16px;padding:12px;text-align:center;}
+  .stat .n{font-size:24px;font-weight:800;color:var(--pink-deep);}
+  .stat .l{font-size:12px;color:var(--text-soft);margin-top:2px;}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .cal-head .m{font-weight:800;font-size:16px;}
+  .cal-head button{border:none;background:#fff;border:1.5px solid var(--pink-soft);color:var(--pink-deep);
+    width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px;}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal .dow{font-size:11px;color:var(--text-soft);text-align:center;padding:2px 0;}
+  .cal .day{aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:14px;background:#fff;border:1.5px solid #ffe3ec;cursor:pointer;position:relative;user-select:none;}
+  .cal .day.empty{background:transparent;border:none;cursor:default;}
+  .cal .day.checked{background:linear-gradient(160deg,var(--pink),var(--pink-deep));color:#fff;border-color:transparent;}
+  .cal .day.today{box-shadow:0 0 0 2px var(--gold) inset;}
+  .cal .day.checked::after{content:"💗";position:absolute;font-size:10px;bottom:1px;right:2px;}
+  .cal-note{text-align:center;font-size:13px;color:var(--text-soft);margin-top:12px;}
+  .love-row{display:flex;gap:8px;margin-top:16px;}
+  .love-date{flex:1;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px 12px;font-size:14px;outline:none;color:var(--text);background:#fff;}
+  .love-date:focus{border-color:var(--pink);}
+
+  /* 底部导航 */
+  nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(10px);display:flex;z-index:5;
+    border-top:1px solid var(--pink-soft);padding:6px 0 calc(6px + env(safe-area-inset-bottom));
+    overflow-x:auto;scrollbar-width:none;}
+  nav::-webkit-scrollbar{display:none;}
+  nav button{flex:0 0 auto;min-width:58px;border:none;background:transparent;color:var(--text-soft);font-size:12px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 6px;}
+  nav button .ic{font-size:22px;}
+  nav button.on{color:var(--pink-deep);font-weight:800;}
+  .toast{position:fixed;left:50%;top:30%;transform:translateX(-50%);background:rgba(90,58,71,.92);
+    color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  /* 锁定（不可补签）的日期 */
+  .cal .day.locked{opacity:.4;cursor:default;}
+  .cal .day.locked.checked{opacity:.55;}
+
+  /* 顶部每日运势条 */
+  .fortune-strip{margin-top:10px;background:linear-gradient(90deg,#fff,#ffeef4);border:1px solid var(--pink-soft);
+    border-radius:14px;padding:8px 12px;font-size:13px;color:var(--pink-deep);text-align:center;line-height:1.5;}
+  .fortune-strip b{color:var(--pink-deep);}
+
+  /* 运势卡片 */
+  .fortune-banner{background:linear-gradient(160deg,#fff7fa,#ffe3ef);border-radius:18px;padding:16px;margin-bottom:14px;text-align:center;}
+  .fortune-banner .date{font-size:12px;color:var(--text-soft);}
+  .fortune-banner .yi,.fortune-banner .ji{margin-top:10px;font-size:15px;}
+  .fortune-banner .yi b{color:#2bb673;}
+  .fortune-banner .ji b{color:#ff5a7a;}
+  .fortune-banner .line{margin-top:12px;font-size:16px;font-weight:700;color:var(--pink-deep);}
+  .fortune-banner .luck{margin-top:8px;font-size:13px;color:var(--text-soft);}
+
+  /* 表单字段 */
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:13px;color:var(--text-soft);margin-bottom:4px;}
+  .field input{width:100%;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px 12px;font-size:14px;outline:none;color:var(--text);background:#fff;}
+  .field input:focus{border-color:var(--pink);}
+  .period-row{display:flex;gap:10px;}
+  .period-row .field{flex:1;}
+  .period-result{text-align:center;font-size:16px;font-weight:700;color:var(--pink-deep);margin-top:8px;}
+
+  /* 礼物 */
+  .gift-list{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+  .gift-item{display:flex;align-items:center;gap:10px;background:var(--pink-soft);border-radius:12px;padding:10px 12px;}
+  .gift-item .txt{flex:1;font-size:14px;color:var(--pink-deep);word-break:break-all;}
+  .gift-item.done .txt{text-decoration:line-through;opacity:.6;}
+  .gift-item .ck{cursor:pointer;font-size:18px;}
+  .gift-item .del{cursor:pointer;color:#ff5a7a;font-weight:800;border:none;background:transparent;font-size:15px;}
+
+  /* 每日一拍 */
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+  .photo-cell{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1;background:#fff;border:1.5px solid var(--pink-soft);}
+  .photo-cell img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-cell .pd{position:absolute;left:0;right:0;bottom:0;background:rgba(90,58,71,.6);color:#fff;font-size:10px;text-align:center;padding:2px 0;}
+  .photo-cell .pdel{position:absolute;top:2px;right:2px;background:rgba(255,90,122,.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;}
+
+  /* 和好悬浮按钮 + 弹层 */
+  .makeup-fab{position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:6;
+    width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(160deg,var(--pink),var(--pink-deep));
+    color:#fff;font-size:24px;box-shadow:0 8px 20px rgba(255,77,121,.45);cursor:pointer;}
+  .makeup-fab:active{transform:scale(.92);}
+  .makeup-overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+    background:rgba(255,200,220,.55);backdrop-filter:blur(4px);}
+  .makeup-overlay.show{display:flex;animation:fade .25s ease;}
+  .makeup-card{background:#fff;border-radius:24px;padding:30px 26px;text-align:center;box-shadow:0 16px 40px rgba(255,77,121,.35);
+    max-width:300px;animation:pop .4s cubic-bezier(.2,1.4,.5,1);}
+  @keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .makeup-emoji{font-size:54px;animation:shake .6s ease infinite;}
+  @keyframes shake{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
+  .makeup-text{font-size:22px;font-weight:800;color:var(--pink-deep);margin-top:10px;}
+  .makeup-sub{font-size:13px;color:var(--text-soft);margin-top:8px;}
+  .mk-heart{position:absolute;font-size:22px;animation:mkfloat 1.5s ease-out forwards;pointer-events:none;}
+  @keyframes mkfloat{0%{transform:translateY(0) scale(.6);opacity:0;}20%{opacity:1;}100%{transform:translateY(-130px) scale(1.2);opacity:0;}}
+
+  /* 数据同步 */
+  .row{display:flex;gap:8px;margin-bottom:8px;}
+  .sync-box{background:linear-gradient(160deg,#fff7fa,#ffe9f1);border-radius:16px;padding:14px;margin-bottom:12px;}
+  .sync-box .row{margin-bottom:0;}
+  .sync-box input{flex:1;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px 12px;font-size:14px;outline:none;color:var(--text);background:#fff;text-transform:uppercase;}
+  .sync-room{text-align:center;font-size:15px;color:var(--text);margin:10px 0;word-break:break-all;}
+  .sync-room b{color:var(--pink-deep);font-size:20px;letter-spacing:2px;}
+  .sync-qr{display:flex;justify-content:center;margin-top:8px;}
+  .sync-qr img{border-radius:10px;background:#fff;padding:6px;}
+  .sync-status{text-align:center;font-size:13px;color:var(--pink-deep);margin-top:6px;min-height:18px;}
+
+  /* 节日 / 礼物抽奖 */
+  .fest-today{background:linear-gradient(160deg,#fff0f6,#ffe0ec);border-radius:14px;padding:10px 12px;margin-bottom:12px;text-align:center;font-weight:700;color:var(--pink-deep);}
+  .fest-list{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+  .fest-item{display:flex;align-items:center;gap:10px;background:var(--pink-soft);border-radius:12px;padding:10px 12px;}
+  .fest-item.today{background:linear-gradient(160deg,#ffd9e8,#ffc2dc);font-weight:700;}
+  .fest-emoji{font-size:20px;}
+  .fest-name{flex:1;font-size:14px;color:var(--pink-deep);}
+  .fest-days{font-size:13px;color:#a25;font-weight:700;white-space:nowrap;}
+  .fest-del{cursor:pointer;color:#ff5a7a;border:none;background:transparent;font-size:15px;}
+  .fest-raffle{margin-top:8px;}
+  .gift-raffle-overlay{position:fixed;inset:0;background:rgba(255,140,180,.35);display:none;align-items:center;justify-content:center;z-index:60;}
+  .gift-raffle-overlay.show{display:flex;}
+  .gift-raffle-card{background:#fff;border-radius:20px;padding:26px 22px;width:78%;max-width:320px;text-align:center;box-shadow:0 12px 40px rgba(255,120,160,.3);}
+  .gr-emoji{font-size:42px;animation:bob 1.2s infinite;}
+  .gr-title{color:var(--pink-deep);font-weight:700;margin:10px 0 6px;font-size:15px;}
+  .gr-result{font-size:24px;font-weight:800;color:var(--pink-deep);min-height:34px;margin:8px 0 16px;word-break:break-all;}
+  .gr-result.pop{animation:pop .4s;}
+  .gift-raffle-card .btn{margin-top:8px;}
+  @keyframes pop{0%{transform:scale(.6);opacity:.3}100%{transform:scale(1);opacity:1}}
+
+  /* 天气 / 夸夸 / 紧急 / 日记 / 时光胶囊 */
+  .home-weather{display:flex;align-items:center;gap:10px;background:linear-gradient(160deg,#eaf6ff,#eaf0ff);border-radius:14px;padding:10px 14px;margin-bottom:10px;color:#335;}
+  .home-weather .w-emoji{font-size:26px;}
+  .home-weather .w-txt{flex:1;font-size:14px;line-height:1.4;}
+  .home-weather .w-refresh{cursor:pointer;font-size:12px;color:#3a7;background:#fff;border:none;border-radius:8px;padding:4px 8px;}
+  .w-remind{color:#c0392b;font-weight:700;}
+  .praise-box{text-align:center;padding:6px 0;}
+  .praise-result{font-size:18px;font-weight:800;color:var(--pink-deep);min-height:52px;display:flex;align-items:center;justify-content:center;margin:12px 0;padding:0 6px;}
+  .home-sos{background:linear-gradient(160deg,#ff5a7a,#ff8aa0);color:#fff;border-radius:16px;padding:14px;margin-bottom:12px;text-align:center;font-weight:800;box-shadow:0 8px 24px rgba(255,90,122,.35);}
+  .home-sos .sos-ack{margin-top:8px;background:#fff;color:#ff5a7a;border:none;border-radius:10px;padding:6px 14px;font-weight:700;}
+  .eat-reason{margin-top:10px;font-size:13px;color:var(--pink-deep);min-height:18px;text-align:center;}
+  .home-task .task-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed #ffe1ec;}
+  .home-task .task-item:last-child{border-bottom:none;}
+  .task-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--pink);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:13px;color:#fff;background:#fff;transition:.2s;}
+  .task-check.on{background:var(--pink);}
+  .task-txt{flex:1;font-size:15px;}
+  .task-item.done .task-txt{text-decoration:line-through;color:#c9c9c9;}
+  .task-prog{font-size:12px;color:#ff9bb3;margin-left:6px;}
+  .sos-btn{font-size:20px;font-weight:800;background:linear-gradient(160deg,#ff5a7a,#ff8aa0);color:#fff;border:none;padding:18px;border-radius:18px;width:100%;box-shadow:0 8px 24px rgba(255,90,122,.4);}
+  .sos-btn:active{transform:scale(.98);}
+  .sos-overlay{position:fixed;inset:0;background:rgba(255,90,122,.3);display:none;align-items:center;justify-content:center;z-index:70;}
+  .sos-overlay.show{display:flex;animation:sosPulse 1s ease-in-out infinite;}
+  @keyframes sosPulse{0%,100%{background:rgba(255,90,122,.25);}50%{background:rgba(255,40,80,.5);}}
+  .sos-card{background:#fff;border-radius:18px;padding:22px;width:80%;max-width:340px;text-align:center;box-shadow:0 12px 40px rgba(255,40,80,.4);animation:sosShake .5s ease-in-out infinite;}
+  @keyframes sosShake{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .sos-card{background:#fff;border-radius:20px;padding:24px;width:80%;max-width:340px;text-align:center;}
+  .sos-card .big{font-size:22px;font-weight:800;color:#ff5a7a;margin:8px 0;}
+  .sos-card .msg{white-space:pre-wrap;text-align:left;font-size:14px;color:#444;background:#fff5f7;border-radius:12px;padding:10px;margin:10px 0;word-break:break-all;}
+  .diary-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .diary-item{background:var(--pink-soft);border-radius:12px;padding:10px 12px;}
+  .diary-date{font-size:12px;color:#a25;margin-bottom:4px;}
+  .diary-text{font-size:14px;color:var(--pink-deep);white-space:pre-wrap;word-break:break-all;}
+  .diary-del{cursor:pointer;color:#ff5a7a;border:none;background:transparent;font-size:13px;float:right;}
+  .capsule-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .capsule-item{background:#fff3e0;border-radius:12px;padding:10px 12px;}
+  .capsule-revealed{background:#e8fff0;}
+  .capsule-meta{font-size:12px;color:#a25;margin-bottom:4px;}
+  .capsule-text{font-size:14px;color:#444;white-space:pre-wrap;word-break:break-all;}
+  .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .tag{background:var(--pink-soft);color:var(--pink-deep);border-radius:20px;padding:4px 10px;font-size:12px;cursor:pointer;}
+  .period-row{display:flex;gap:10px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:12px;color:#a25;margin-bottom:4px;}
+
+  /* 多纪念日 */
+  .anniv-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+  .anniv-item{background:linear-gradient(160deg,#fff7fa,#ffe9f1);border-radius:14px;padding:12px 14px;}
+  .anniv-top{display:flex;justify-content:space-between;align-items:center;}
+  .anniv-name{font-weight:800;color:var(--pink-deep);font-size:15px;}
+  .anniv-del{border:none;background:transparent;color:#c98aa3;font-size:16px;cursor:pointer;}
+  .anniv-date{font-size:12px;color:var(--text-soft);margin:2px 0 4px;}
+  .anniv-info{font-size:13px;color:var(--text);}
+  .anniv-info .warn{color:#e08aa6;}
+  .anniv-add{display:flex;gap:8px;flex-wrap:wrap;}
+  .anniv-add .anniv-name-input{flex:1;min-width:120px;border:1.5px solid var(--pink-soft);border-radius:12px;padding:10px 12px;font-size:14px;outline:none;color:var(--text);background:#fff;}
+  .anniv-add .love-date{flex:1;min-width:120px;}
+  .anniv-add #addAnniv{flex:0 0 auto;}
+  .anniv-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--pink-soft);}
+  .anniv-row:last-child{border-bottom:none;}
+  .anniv-row .an{font-weight:700;color:var(--pink-deep);}
+  .anniv-row .ai{font-size:13px;color:var(--text-soft);}
+  .anniv-row .ai .warn{color:#e08aa6;}
+
+  /* 首页积分 */
+  .home-hero{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;}
+  .home-points{align-self:flex-end;background:rgba(255,255,255,.7);border:1.5px solid var(--pink-soft);
+    color:var(--pink-deep);font-weight:800;font-size:14px;border-radius:20px;padding:4px 14px;}
+
+  /* 成就页 */
+  .ach-hero{text-align:center;background:linear-gradient(160deg,#fff7fa,#ffe1ee);border-radius:18px;padding:18px;margin:6px 0 14px;}
+  .ach-points{font-size:34px;font-weight:900;color:var(--pink-deep);}
+  .ach-sub{font-size:13px;color:var(--text-soft);margin-top:4px;}
+  .ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .badge{border-radius:14px;padding:14px 8px;text-align:center;border:1.5px solid var(--pink-soft);}
+  .badge .b-emoji{font-size:30px;}
+  .badge .b-name{font-weight:800;font-size:13px;margin-top:4px;color:var(--text);}
+  .badge .b-desc{font-size:11px;color:var(--text-soft);margin-top:2px;}
+  .badge.on{background:linear-gradient(160deg,#fff0f6,#ffd9e8);box-shadow:0 4px 12px rgba(231,84,128,.18);}
+  .badge.locked{filter:grayscale(.9);opacity:.55;}
+</style>
+</head>
+<body>
+<div class="hearts" id="hearts"></div>
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <header>
+    <div class="title">💕 给最爱的你</div>
+    <div class="sub" id="greet">今天也要开开心心呀～</div>
+    <div class="name-edit">
+      她的名字：<input id="herName" maxlength="8" placeholder="宝贝" />
+      <button id="saveName">保存</button>
+    </div>
+    <div class="fortune-strip" id="fortuneStrip">今日宜：撒娇 忌：生气</div>
+  </header>
+
+  <!-- 首页仪表盘 -->
+  <section class="card active" id="card-home">
+    <div class="home-hero">
+      <div class="home-greet" id="homeGreet">宝贝，今天也要开开心心呀～</div>
+      <div class="home-points" id="homePoints">💎 积分 0</div>
+    </div>
+
+    <div class="home-weather" id="homeWeather">
+      <span class="w-emoji">⛅</span>
+      <span class="w-txt" id="homeWeatherTxt">点「刷新」获取天气</span>
+      <button class="w-refresh" id="weatherRefresh">刷新</button>
+    </div>
+
+    <div class="home-sos" id="homeSos" style="display:none;">
+      <div id="homeSosTxt">🆘 TA 需要你</div>
+      <button class="sos-ack" id="sosAck">已联系 💗</button>
+    </div>
+
+    <div class="home-card" id="homePraise">
+      <div class="hc-label">💖 今日夸夸</div>
+      <div class="hc-line" id="homePraiseTxt"></div>
+    </div>
+
+    <div class="home-card" id="homeCountdown">
+      <div class="hc-label">💞 我们的纪念日</div>
+      <div id="homeAnnivList"></div>
+    </div>
+
+    <div class="home-card" id="homeFortune">
+      <div class="hc-label">🔮 今日运势</div>
+      <div class="hc-line" id="homeLine">今天也要开开心心呀</div>
+      <div class="hc-yiji" id="homeYiJi"></div>
+      <div class="hc-yiji" id="homeFortuneIdx"></div>
+    </div>
+
+    <div class="home-card" id="homeTask">
+      <div class="hc-label">⚡ 今日小任务</div>
+      <div id="homeTaskList"></div>
+    </div>
+
+    <div class="home-card" id="homeFestival">
+      <div class="hc-label">🎉 下一个特殊日子</div>
+      <div id="homeFestNext"></div>
+    </div>
+
+    <div class="home-card mood">
+      <div class="hc-label">💌 今日情话 / 心情</div>
+      <div class="mood-text" id="moodText"></div>
+      <textarea id="moodInput" class="mood-input" placeholder="写一句想对TA说的话…"></textarea>
+      <div class="mood-acts">
+        <button class="btn ghost small" id="moodEdit">写一句</button>
+        <button class="btn ghost small" id="moodSave" style="display:none">保存</button>
+      </div>
+    </div>
+
+    <div class="hc-label">⚡ 快捷入口</div>
+    <div class="home-grid" id="homeGrid">
+      <button data-go="wheel">🎡 抽奖</button>
+      <button data-go="menu">🍱 点菜</button>
+      <button data-go="sign">📅 签到</button>
+      <button data-go="love">💞 纪念日</button>
+      <button data-go="fortune">🔮 运势</button>
+      <button data-go="period">🩸 经期</button>
+      <button data-go="gift">🎁 礼物</button>
+      <button data-go="fest">🎉 节日</button>
+      <button data-go="photo">📸 一拍</button>
+      <button data-go="diary">📝 日记</button>
+      <button data-go="praise">💖 夸夸</button>
+      <button data-go="task">⚡ 任务</button>
+      <button data-go="sos">🆘 紧急</button>
+      <button data-go="sync">🔗 同步</button>
+    </div>
+  </section>
+
+  <!-- 转盘抽奖 -->
+  <section class="card" id="card-wheel">
+    <h2><span class="ic">🎡</span>转盘抽奖</h2>
+    <div class="wheel-wrap">
+      <div class="pointer"></div>
+      <canvas id="wheel" width="300" height="300"></canvas>
+      <div class="hub" id="spinBtn">GO</div>
+    </div>
+    <div class="result" id="wheelResult">点中间 GO 转一下～</div>
+    <div class="editor">
+      <div class="row">
+        <input id="prizeInput" placeholder="输入一个奖品，如：免家务一次" />
+        <button class="btn ghost" id="addPrize">添加</button>
+      </div>
+      <div class="chip-list" id="prizeList"></div>
+    </div>
+    <details class="log-box" id="wheelLogBox">
+      <summary>📜 转出记录 <span class="cnt" id="wheelLogCnt">0</span></summary>
+      <div class="log-list" id="wheelLog"></div>
+      <button class="btn ghost small clear" id="clearWheelLog">清空记录</button>
+    </details>
+  </section>
+
+  <!-- 吃饭菜单 -->
+  <section class="card" id="card-menu">
+    <h2><span class="ic">🍱</span>今天吃什么</h2>
+    <div class="cats" id="cats"></div>
+    <div class="slot" id="slot">想吃啥？</div>
+    <div class="eat-reason" id="eatReason"></div>
+    <button class="btn block" id="decideBtn">🤖 AI 帮我决定！</button>
+    <div class="editor" style="margin-top:12px;">
+      <div class="row">
+        <input id="foodInput" placeholder="给当前分类加一道菜，如：麻辣香锅" />
+        <button class="btn ghost" id="addFood">添加</button>
+      </div>
+      <div class="chip-list" id="foodList"></div>
+      <button class="btn ghost small" id="resetFoods" style="margin-top:6px;">恢复默认菜品</button>
+    </div>
+    <details class="log-box" id="menuLogBox">
+      <summary>📜 点菜记录 <span class="cnt" id="menuLogCnt">0</span></summary>
+      <div class="log-list" id="menuLog"></div>
+      <button class="btn ghost small clear" id="clearMenuLog">清空记录</button>
+    </details>
+  </section>
+
+  <!-- 签到打卡 -->
+  <section class="card" id="card-sign">
+    <h2><span class="ic">📅</span>每日签到</h2>
+    <div class="stats">
+      <div class="stat"><div class="n" id="stTotal">0</div><div class="l">累计打卡</div></div>
+      <div class="stat"><div class="n" id="stCur">0</div><div class="l">连续打卡</div></div>
+      <div class="stat"><div class="n" id="stMax">0</div><div class="l">最长连续</div></div>
+    </div>
+    <div class="cal-head">
+      <button id="prevM">‹</button>
+      <div class="m" id="calMonth">—</div>
+      <button id="nextM">›</button>
+    </div>
+    <div class="cal" id="cal"></div>
+    <div class="cal-note" id="signNote">点今天的日期就能打卡啦 💗</div>
+  </section>
+
+  <!-- 纪念日（多个） -->
+  <section class="card" id="card-love">
+    <h2><span class="ic">💞</span>纪念日</h2>
+    <div class="anniv-list" id="annivList"></div>
+    <div class="anniv-add">
+      <input id="annivName" class="anniv-name-input" placeholder="名称，如：在一起/她生日" maxlength="8" />
+      <input id="annivDate" type="date" class="love-date" />
+      <button class="btn ghost" id="addAnniv">添加</button>
+    </div>
+    <div class="cal-note">可以添加多个：在一起日、生日、结婚日… 💗</div>
+  </section>
+
+  <!-- 今日运势 -->
+  <section class="card" id="card-fortune">
+    <h2><span class="ic">🔮</span>今日运势</h2>
+    <div class="fortune-banner" id="fortuneBanner"></div>
+    <div class="cal-note">每天自动算好宜忌与甜蜜指数 🔮</div>
+  </section>
+
+  <!-- 生理期提醒 -->
+  <section class="card" id="card-period">
+    <h2><span class="ic">🩸</span>生理期提醒</h2>
+    <div class="field"><label>上次开始日期</label><input id="periodLast" type="date" /></div>
+    <div class="period-row">
+      <div class="field"><label>周期(天)</label><input id="periodCycle" type="number" min="15" max="45" value="28" /></div>
+      <div class="field"><label>持续(天)</label><input id="periodDur" type="number" min="2" max="12" value="5" /></div>
+    </div>
+    <button class="btn block" id="savePeriod">保存</button>
+    <div class="cal-note">想让预测更准？每次来都记一下日期 👇（记录越多，均值越准，误差约 ±1 天）</div>
+    <div class="row"><input id="periodAddDate" type="date" style="flex:2;" /><button class="btn ghost" id="addPeriodDate">记录这次</button></div>
+    <div class="tag-list" id="periodDatesList"></div>
+    <div class="period-result" id="periodResult"></div>
+    <div class="cal-note">预测仅供参考，记得照顾好她 💗</div>
+  </section>
+
+  <!-- 礼物灵感库 -->
+  <section class="card" id="card-gift">
+    <h2><span class="ic">🎁</span>礼物灵感库</h2>
+    <div class="editor">
+      <div class="row"><input id="giftInput" placeholder="想送/想收的礼物，如：小熊玩偶" /><button class="btn ghost" id="addGift">添加</button></div>
+    </div>
+    <div class="gift-list" id="giftList"></div>
+    <div class="cal-note">节日到了翻一翻，不抓瞎 🎁</div>
+  </section>
+
+  <!-- 特殊节日 · 礼物抽奖 -->
+  <section class="card" id="card-fest">
+    <h2><span class="ic">🎉</span>特殊节日 · 礼物抽奖</h2>
+    <div class="fest-today" id="festToday" style="display:none;"><span class="ft-text"></span></div>
+    <div class="editor">
+      <div class="row">
+        <input id="festName" placeholder="自定义节日名，如：过年" style="flex:2;" />
+        <input id="festMonth" placeholder="月" type="number" min="1" max="12" style="width:52px;" />
+        <input id="festDay" placeholder="日" type="number" min="1" max="31" style="width:52px;" />
+        <button class="btn ghost" id="addFest">添加</button>
+      </div>
+      <div class="cal-note">520 / 情人节 / 圣诞 / 跨年 等已内置，这里加你们的专属日子（如过年、在一起 100 天）</div>
+    </div>
+    <div class="fest-list" id="festList"></div>
+    <div class="fest-raffle">
+      <button class="btn block" id="giftRaffleBtn">🎁 抽一个礼物送 TA</button>
+      <div class="cal-note">从「礼物灵感库」里随机抽一件，节日不纠结 💝</div>
+    </div>
+  </section>
+
+  <!-- 每日一拍 -->
+  <section class="card" id="card-photo">
+    <h2><span class="ic">📸</span>每日一拍</h2>
+    <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    <button class="btn block" id="photoBtn">📷 拍 / 传今天的照片</button>
+    <div class="photo-grid" id="photoGrid"></div>
+    <div class="cal-note">每天一张，连起来就是你们的时光轴 📸</div>
+  </section>
+
+  <!-- 数据同步 -->
+  <section class="card" id="card-sync">
+    <h2><span class="ic">🔗</span>数据同步</h2>
+    <div class="cal-note" style="margin:0 0 12px;">一部手机当「服务端」，另一部当「客户端」，数据就互通啦 💞</div>
+    <div class="sync-box">
+      <div style="font-weight:700;margin-bottom:8px;">① 服务端（主机 · 先开）</div>
+      <button class="btn block" id="syncCreate">创建同步房间</button>
+      <div class="sync-room">房间号：<b id="syncId">—</b> <button class="btn ghost" id="syncCopy" style="padding:4px 10px;font-size:12px;">复制</button></div>
+      <div class="sync-qr" id="syncQR"></div>
+    </div>
+    <div class="sync-box">
+      <div style="font-weight:700;margin-bottom:8px;">② 客户端（从机 · 后连）</div>
+      <div class="row"><input id="syncRoom" placeholder="输入对方的房间号" maxlength="6" /><button class="btn ghost" id="syncJoin">加入</button></div>
+    </div>
+    <div class="sync-box" style="border-color:#ffb3c6;background:#fff7fa;">
+      <div style="font-weight:700;margin-bottom:6px;">🌐 中转服务（推荐 · 国内直连自动同步）</div>
+      <div class="cal-note" style="margin:0 0 8px;">用邮箱注册 <b>Supabase</b>（无需手机/实名）→ 建项目 → 在 SQL Editor 执行建表语句 → 填入下方 <b>Project URL / anon key</b> 即可（数据存你自己的云端，自动实时同步 💗）。建表 SQL 看下面说明。</div>
+      <div class="row"><input id="sbUrl" placeholder="Project URL（如 https://xxxx.supabase.co）" style="flex:1;" /></div>
+      <div class="row" style="margin-top:6px;"><input id="sbKey" placeholder="anon public key（Settings → API 里复制）" style="flex:1;" /></div>
+      <div class="row" style="margin-top:6px;"><input id="sbNick" placeholder="你的昵称（会显示给对方，如：宝贝）" maxlength="12" style="flex:1;" /><button class="btn ghost" id="nickSave">保存昵称</button></div>
+      <div class="row" style="margin-top:6px;">
+        <button class="btn ghost" id="lcSave">保存并启用</button>
+        <button class="btn ghost" id="lcTest">测试连接</button>
+        <button class="btn ghost" id="lcClear">停用</button>
+        <span id="lcState" class="cal-note" style="margin:0;">未配置</span>
+      </div>
+      <div id="lcTestMsg" class="cal-note" style="margin:6px 0 0;color:#c0392b;min-height:0;"></div>
+    </div>
+    <div class="sync-box" id="memberBox" style="border-color:#ffd6e0;background:#fffafc;">
+      <div style="font-weight:700;margin-bottom:6px;">👥 房间成员 <span id="memberCount" style="color:#e84c88;">（未连接）</span></div>
+      <div id="memberList" class="cal-note" style="margin:0;line-height:1.9;">连接房间后，这里会显示当前在同一房间的人 💗</div>
+    </div>
+    <div class="sync-box">
+      <div style="font-weight:700;margin-bottom:8px;">手动备份 / 恢复（兜底）</div>
+      <div class="row">
+        <button class="btn ghost" id="syncExport">导出数据</button>
+        <button class="btn ghost" id="syncImport">导入数据</button>
+        <input id="syncFile" type="file" accept="application/json" style="display:none;" />
+      </div>
+    </div>
+    <div class="sync-box">
+      <div style="font-weight:700;margin-bottom:8px;">分享给 TA（自动加入同房间）</div>
+      <button class="btn ghost" id="syncShare">📲 生成分享二维码</button>
+      <div class="sync-qr" id="shareQR" style="margin-top:8px;"></div>
+      <div class="cal-note" style="margin-top:6px;">生成当前页面的二维码（已带房间号），TA 扫码即自动加入同一房间，两端改动实时同步 💗</div>
+    </div>
+    <div class="sync-room-status" id="roomStatusBar" style="display:none;background:#fff;border:1.5px solid #ffd6e0;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px;align-items:center;">
+      <span id="roomStatText" style="flex:1;"></span>
+      <button class="btn ghost" id="refreshMembers" style="padding:4px 10px;font-size:12px;margin-left:8px;">刷新</button>
+    </div>
+    <div class="sync-status" id="syncStatus">未连接</div>
+  </section>
+
+  <!-- 情侣积分 · 成就 -->
+  <section class="card" id="card-ach">
+    <h2><span class="ic">🏆</span>情侣积分 · 成就</h2>
+    <div class="ach-hero">
+      <div class="ach-points" id="achPoints">💎 0</div>
+      <div class="ach-sub">做任务攒积分，解锁专属成就徽章</div>
+    </div>
+    <div class="ach-grid" id="achGrid"></div>
+    <div class="cal-note">积分获取：签到 +1 · 转盘 +1 · 点菜 +1 · 一拍 +2</div>
+  </section>
+
+  <!-- 今日任务 -->
+  <section class="card" id="card-task">
+    <h2><span class="ic">⚡</span>今日小任务</h2>
+    <div class="cal-note">每天自动挑一件甜甜的小事，一起完成吧 💕</div>
+    <div id="taskList" style="margin-top:12px;"></div>
+    <div class="editor" style="margin-top:14px;">
+      <div class="row">
+        <input id="taskInput" placeholder="加一个专属任务，如：一起看星星" />
+        <button class="btn ghost" id="addTask">添加</button>
+      </div>
+      <div class="chip-list" id="taskCustomList"></div>
+    </div>
+    <details class="log-box" id="taskDoneBox" style="margin-top:12px;">
+      <summary>✅ 已完成清单 <span class="cnt" id="taskDoneCnt">0</span></summary>
+      <div class="log-list" id="taskDoneList"></div>
+      <button class="btn ghost small clear" id="clearTaskDone">清空已完成</button>
+    </details>
+  </section>
+
+  <!-- 情侣日记 -->
+  <section class="card" id="card-diary">
+    <h2><span class="ic">📝</span>情侣日记</h2>
+    <div class="editor">
+      <input id="diaryTitle" class="diary-title" placeholder="标题（可选），如：我们的周末" />
+      <textarea id="diaryInput" class="diary-area" placeholder="今天想记点什么…（按日期保存，同一天会覆盖）"></textarea>
+      <button class="btn block" id="saveDiary">保存今天这篇 💗</button>
+    </div>
+    <div class="diary-list" id="diaryList"></div>
+  </section>
+
+  <!-- 夸夸系统 -->
+  <section class="card" id="card-praise">
+    <h2><span class="ic">💖</span>夸夸系统</h2>
+    <div class="praise-box">
+      <button class="btn block" id="praiseBtn">夸夸她 💖</button>
+      <div class="praise-result" id="praiseResult">点一下，收获一句甜</div>
+    </div>
+    <div class="editor">
+      <div class="row"><input id="praiseInput" placeholder="想加一句专属夸夸" /><button class="btn ghost" id="addPraise">添加</button></div>
+    </div>
+  </section>
+
+  <!-- 紧急按钮 -->
+  <section class="card" id="card-sos">
+    <h2><span class="ic">🆘</span>紧急按钮</h2>
+    <div class="cal-note">遇到困难按一下，TA 会立刻收到「我需要你」+ 你的位置 💗</div>
+    <button class="sos-btn" id="sosBtn">🆘 我需要你</button>
+    <div class="editor" style="margin-top:12px;">
+      <textarea id="sosCapsule" class="mood-input" placeholder="想趁现在对 TA 说的一句话（随定位一起送出）"></textarea>
+    </div>
+    <div class="cal-note">时光胶囊：写一段话，到那天才揭晓 💌</div>
+    <div class="editor">
+      <div class="row"><input id="capsuleText" placeholder="写给未来的话" style="flex:2;" /><input id="capsuleDate" type="date" style="flex:1;" /></div>
+      <button class="btn ghost" id="addCapsule">封存胶囊</button>
+    </div>
+    <div class="capsule-list" id="capsuleList"></div>
+  </section>
+</div>
+
+<!-- 吵架和好悬浮按钮 -->
+<button id="makeupBtn" class="makeup-fab">💗</button>
+<div class="makeup-overlay" id="makeupOverlay">
+  <div class="makeup-card">
+    <div class="makeup-emoji">🤗</div>
+    <div class="makeup-text" id="makeupText">我错了，抱抱～</div>
+    <div class="makeup-sub">点一下就原谅我嘛 💕</div>
+  </div>
+</div>
+
+<!-- 礼物抽奖弹层 -->
+<div class="gift-raffle-overlay" id="giftRaffleOverlay">
+  <div class="gift-raffle-card">
+    <div class="gr-emoji">🎁</div>
+    <div class="gr-title">这个节日，就送 TA ——</div>
+    <div class="gr-result" id="giftRaffleResult">？</div>
+    <button class="btn block" id="giftRaffleAgain">再抽一次 🔁</button>
+    <button class="btn ghost small" id="giftRaffleClose">关闭</button>
+  </div>
+</div>
+
+<!-- 紧急已通知弹层 -->
+<div class="sos-overlay" id="sosOverlay">
+  <div class="sos-card">
+    <div class="big">已通知 TA 💗</div>
+    <div class="msg" id="sosMsg"></div>
+    <button class="btn block" id="sosCopy">复制给微信</button>
+    <button class="btn ghost small" id="sosClose">关闭</button>
+  </div>
+</div>
+
+<nav>
+  <button class="on" data-card="home"><span class="ic">💕</span>首页</button>
+  <button data-card="wheel"><span class="ic">🎡</span>抽奖</button>
+  <button data-card="menu"><span class="ic">🍱</span>菜单</button>
+  <button data-card="sign"><span class="ic">📅</span>签到</button>
+  <button data-card="love"><span class="ic">💞</span>纪念日</button>
+  <button data-card="fortune"><span class="ic">🔮</span>运势</button>
+  <button data-card="period"><span class="ic">🩸</span>经期</button>
+      <button data-card="gift"><span class="ic">🎁</span>礼物</button>
+      <button data-card="fest"><span class="ic">🎉</span>节日</button>
+      <button data-card="photo"><span class="ic">📸</span>一拍</button>
+      <button data-card="diary"><span class="ic">📝</span>日记</button>
+      <button data-card="praise"><span class="ic">💖</span>夸夸</button>
+      <button data-card="sos"><span class="ic">🆘</span>紧急</button>
+      <button data-card="task"><span class="ic">⚡</span>任务</button>
+  <button data-card="sync"><span class="ic">🔗</span>同步</button>
+  <button data-card="ach"><span class="ic">🏆</span>成就</button>
+</nav>
+
+<script>
+/* ---------- 通用存储 ---------- */
+var syncRef = null; // 实时同步引用（避免 store 早于 sync 定义时的 TDZ）
+const store = {
+  get(k, d){ try{ const v = JSON.parse(localStorage.getItem('gfapp_'+k)); return v===null||v===undefined? d : v; }catch(e){ return d; } },
+  set(k, v){ localStorage.setItem('gfapp_'+k, JSON.stringify(v)); bumpV(k);
+    const connOpen = syncRef && syncRef.conn && syncRef.conn.open;
+    if(syncRef && !syncRef._remote && connOpen && !SYNC_SKIP.includes('gfapp_'+k)) syncRef.patch(k, v);
+    try{ if(typeof relay!=='undefined' && relay.hasConf() && !SYNC_SKIP.includes('gfapp_'+k)) relay.push(); }catch(e){} },
+  vmap(){ try{ return JSON.parse(localStorage.getItem('gfapp_sync_v')||'{}'); }catch(e){ return {}; } }
+};
+function bumpV(k){ const v=store.vmap(); v['gfapp_'+k]=Date.now(); localStorage.setItem('gfapp_sync_v', JSON.stringify(v)); }
+function bumpVfull(fullKey){ const v=store.vmap(); v[fullKey]=Date.now(); localStorage.setItem('gfapp_sync_v', JSON.stringify(v)); }
+const $ = s => document.querySelector(s);
+const toast = (msg)=>{ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1500); };
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))|0; } return Math.abs(h)||1; }
+function seedRand(seed){ let s=seed%2147483647; if(s<=0) s+=2147483646; return ()=>{ s=s*16807%2147483647; return (s-1)/2147483646; }; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function compressImg(file, cb){
+  const r=new FileReader();
+  r.onload=e=>{ const img=new Image();
+    img.onload=()=>{ let w=img.width,h=img.height,max=480;
+      if(w>h&&w>max){ h=h*w/max; w=max; } else if(h>max){ w=w*h/max; h=max; }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      cb(c.toDataURL('image/jpeg',0.6)); };
+    img.src=e.target.result; };
+  r.readAsDataURL(file);
+}
+
+/* ---------- 同步相关工具 ---------- */
+function loadScript(src, cb){ const s=document.createElement('script'); s.src=src; s.onload=()=>cb&&cb();
+  s.onerror=()=>{ toast('同步组件加载失败，可用「手动备份」同步'); cb&&cb(); }; document.head.appendChild(s); }
+const SYNC_ARRAY_KEYS = ['gfapp_records','gfapp_prizes','gfapp_foods','gfapp_gifts','gfapp_photos','gfapp_fortune_yi','gfapp_fortune_ji','gfapp_anniversaries','gfapp_achieved','gfapp_festivals','gfapp_diary','gfapp_praiseCustom','gfapp_sos','gfapp_capsules','gfapp_periodDates','gfapp_taskCustom','gfapp_taskDone'];
+// 积分为每台设备各自的「宠爱值」，不同步（避免两端互相覆盖）；连接配置为本机私有，也不同步
+const SYNC_SKIP = ['gfapp_points','gfapp_sync_conf','gfapp_sb_conf','gfapp_wheel_date','gfapp_nickname','gfapp_device_id'];
+function snapshot(){
+  const data={}, v=store.vmap();
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith('gfapp_') && !SYNC_SKIP.includes(k)) data[k]=localStorage.getItem(k); }
+  return {data, v};
+}
+function readJson(k, d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+function unionArr(a, b){ const seen=new Set(a.map(x=>JSON.stringify(x))); const out=a.slice();
+  b.forEach(x=>{ const s=JSON.stringify(x); if(!seen.has(s)) out.push(x); }); return out; }
+function setVfull(fullKey, ts){ const v=store.vmap(); v[fullKey]=ts; localStorage.setItem('gfapp_sync_v', JSON.stringify(v)); }
+function mergeSnap(snap){
+  if(!snap||!snap.data) return;
+  const incV = snap.v||{}, myV = store.vmap(), data = snap.data;
+  for(const k in data){
+    if(SYNC_SKIP.includes(k)) continue; // 积分等每台设备独立，跳过
+    // 所有键一律「按键最后写入者胜」：谁的时间戳新，谁的整份值（含删除）覆盖对方。
+    // 这样一端删除条目后，对方拉取时会整份采纳这份「已删除」的值，删除得以真正同步，
+    // 不会再像并集那样把删掉的条目又并回来。时间戳相同则用值本身对称决胜，保证两端收敛。
+    const tsIn = incV[k]||0, tsMy = myV[k]||0;
+    const localStr = localStorage.getItem(k) || '';
+    const win = (tsIn > tsMy) || (tsIn===tsMy && data[k] > localStr);
+    if(win){ localStorage.setItem(k, data[k]); setVfull(k, tsIn||Date.now()); }
+  }
+}
+function refreshAll(){
+  try{
+    wheel.prizes = store.get('prizes', ['奶茶一杯','免家务一次','拥抱10秒','陪逛街','晚饭我做','按摩5分钟']); wheel.renderChips(); wheel.draw();
+    menu.foods = store.get('foods', null); menu.normalizeFoods(false); menu.renderFoods();
+    sign.records = store.get('records', []); sign.render();
+    love.list = store.get('anniversaries', []); love.render();
+    fortune.yi = store.get('fortune_yi', ['撒娇','黏着你','吃甜品','说我爱你','一起散步','自拍','赖床','逛街','收礼物','窝沙发']);
+    fortune.ji = store.get('fortune_ji', ['生气','冷战','熬夜','挑食','耍小性子','晚归','看手机不理我','皱眉']);
+    fortune.render();
+    period.data = store.get('period', {last:null,cycle:28,dur:5}); period.dates = store.get('periodDates', []); period.fill(); period.render();
+    gift.list = store.get('gifts', []); gift.render();
+    if(typeof festival!=='undefined'){ festival.customs=store.get('festivals',[]); festival.render(); }
+    if(typeof diary!=='undefined'){ diary.list=(store.get('diary',[])||[]); diary.render(); }
+    if(typeof praise!=='undefined'){ praise.custom=store.get('praiseCustom',[]); }
+    if(typeof sos!=='undefined') sos.render();
+    if(typeof weather!=='undefined') weather.show();
+    photo.data = store.get('photos', {}); photo.render();
+    if(typeof task!=='undefined'){ task.done=store.get('taskDone', []); task.custom=store.get('taskCustom', []); task.seedMap=store.get('taskSeed', {}); task.renderChips(); task.render(); task.renderDone(); }
+    mood.data = store.get('moods', {}); mood.render();
+    if(typeof achievements!=='undefined') achievements.evaluate(false);
+    if(typeof home!=='undefined') home.render();
+    refreshLocks();
+  }catch(e){}
+}
+
+/* ---------- 爱情背景爱心 ---------- */
+(function(){
+  const box=$('#hearts'); const emo=['💕','💗','🌸','✨','💖'];
+  for(let i=0;i<16;i++){ const s=document.createElement('span');
+    s.textContent=emo[Math.floor(Math.random()*emo.length)];
+    s.style.left=Math.random()*100+'%';
+    s.style.fontSize=(14+Math.random()*16)+'px';
+    s.style.animationDuration=(8+Math.random()*10)+'s';
+    s.style.animationDelay=(-Math.random()*15)+'s';
+    box.appendChild(s); }
+})();
+
+/* ---------- 名字 ---------- */
+(function(){
+  const name = store.get('herName','宝贝');
+  $('#herName').value = name;
+  const apply = n => { $('#greet').textContent = n+'，今天也要开开心心呀～'; };
+  apply(name);
+  $('#saveName').onclick = ()=>{ const v=$('#herName').value.trim()||'宝贝'; store.set('herName',v); apply(v); toast('记住啦 💗'); };
+})();
+
+/* ---------- 导航 ---------- */
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+    b.classList.add('on');
+    $('#card-'+b.dataset.card).classList.add('active');
+    if(b.dataset.card==='wheel' && typeof wheel!=='undefined') wheel.refreshLock();
+    if(b.dataset.card==='praise' && typeof praise!=='undefined') praise.refreshLock();
+    if(b.dataset.card==='home' && typeof home!=='undefined') home.render();
+    if(b.dataset.card==='ach' && typeof achievements!=='undefined') achievements.render();
+    if(b.dataset.card==='fest' && typeof festival!=='undefined') festival.render();
+    if(b.dataset.card==='diary' && typeof diary!=='undefined') diary.render();
+    if(b.dataset.card==='praise' && typeof praise!=='undefined') praise.render();
+    if(b.dataset.card==='sos' && typeof sos!=='undefined') sos.render();
+    if(b.dataset.card==='task' && typeof task!=='undefined') task.render();
+  };
+});
+
+/* ================= 转盘抽奖 ================= */
+const wheel = {
+  canvas:$('#wheel'), ctx:null, prizes:store.get('prizes',['奶茶一杯','免家务一次','拥抱10秒','陪逛街','晚饭我做','按摩5分钟']),
+  angle:0, spinning:false,
+  colors:['#ffb3c8','#ffc9d6','#ffa3bf','#ffd6e3','#ff8fb3','#ffc1d6','#ff9eb8','#ffe0ea'],
+  log:store.get('wheelLog',[]),
+  init(){ this.ctx=this.canvas.getContext('2d'); this.renderChips(); this.draw(); this.bind(); this.refreshLock(); this.renderLog(); },
+  todayStr(){ const t=new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); },
+  isUsedToday(){ return store.get('wheel_date','') === this.todayStr(); },
+  setUsedToday(){ store.set('wheel_date', this.todayStr()); },
+  canSpin(){ return true; }, // 服务端/客户端都能抽奖；每日限一次由 wheel_date 控制（已加入 SYNC_SKIP，按设备独立）
+  canEdit(){ return !syncRef || syncRef.role!=='client'; },
+  refreshLock(){
+    const used=this.isUsedToday();
+    const btn=$('#spinBtn');
+    const r=$('#wheelResult');
+    if(!this.canSpin()){ btn.classList.add('locked'); btn.classList.remove('used');
+      if(r.textContent!=='今天已经转过啦，明天再来 💗') r.textContent='🔒 只有服务端（创建房间的手机）能抽奖'; }
+    else { btn.classList.remove('locked');
+      btn.classList.toggle('used', used);
+      if(used) r.textContent='今天已经转过啦，明天再来 💗';
+      else if(r.textContent==='今天已经转过啦，明天再来 💗'||r.textContent==='🔒 只有服务端（创建房间的手机）能抽奖') r.textContent='点中间 GO 转一下～'; }
+    // 奖品管理：客户端锁定（奖品池由服务端统一维护，避免各自为政）
+    const addBtn=$('#addPrize'), input=$('#prizeInput');
+    if(!this.canEdit()){ if(addBtn){ addBtn.classList.add('locked'); addBtn.disabled=true; } if(input){ input.disabled=true; input.placeholder='🔒 只有服务端能添加奖品'; } }
+    else { if(addBtn){ addBtn.classList.remove('locked'); addBtn.disabled=false; } if(input){ input.disabled=false; input.placeholder='输入一个奖品，如：免家务一次'; } }
+  },
+  draw(){
+    const ctx=this.ctx, n=this.prizes.length, r=150, cx=150, cy=150;
+    ctx.clearRect(0,0,300,300);
+    if(n===0){ ctx.fillStyle='#eee'; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill(); return; }
+    const step=2*Math.PI/n;
+    for(let i=0;i<n;i++){
+      const a0=this.angle+i*step, a1=a0+step;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
+      ctx.fillStyle=this.colors[i%this.colors.length]; ctx.fill();
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(a0+step/2);
+      ctx.fillStyle='#5a3a47'; ctx.font='bold 14px sans-serif'; ctx.textAlign='right';
+      const txt=this.prizes[i]; ctx.fillText(txt.length>6?txt.slice(0,6)+'…':txt,r-12,5);
+      ctx.restore();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,8,0,7); ctx.fillStyle='#fff'; ctx.fill();
+  },
+  bind(){
+    $('#spinBtn').onclick=()=>this.spin();
+    $('#addPrize').onclick=()=>{
+      if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能添加奖品 🔒'); return; }
+      const v=$('#prizeInput').value.trim(); if(!v)return;
+      this.prizes.push(v); store.set('prizes',this.prizes); $('#prizeInput').value='';
+      this.renderChips(); this.draw(); toast('已添加 🎉');
+    };
+    $('#clearWheelLog').onclick=()=>{ if(confirm('确定清空转盘记录？')){ this.log=[]; store.set('wheelLog',[]); this.renderLog(); } };
+  },
+  pushLog(prize){
+    const t=new Date();
+    const pad=x=>(''+x).padStart(2,'0');
+    const ts=t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate())+' '+pad(t.getHours())+':'+pad(t.getMinutes());
+    this.log.unshift({t:ts, p:prize});
+    if(this.log.length>50) this.log=this.log.slice(0,50);
+    store.set('wheelLog',this.log); this.renderLog();
+  },
+  renderLog(){
+    const box=$('#wheelLog'); $('#wheelLogCnt').textContent=this.log.length;
+    if(this.log.length===0){ box.innerHTML='<div class="log-empty">还没有记录，转一下试试 🎡</div>'; return; }
+    box.innerHTML='';
+    this.log.forEach(it=>{
+      const d=document.createElement('div'); d.className='log-item';
+      d.innerHTML='<span class="t">'+it.t+'</span><span class="p">'+escapeHtml(it.p)+'</span>';
+      box.appendChild(d);
+    });
+  },
+  renderChips(){
+    const box=$('#prizeList'); box.innerHTML='';
+    this.prizes.forEach((p,i)=>{
+      const c=document.createElement('span'); c.className='chip';
+      c.innerHTML=p+' <b data-i="'+i+'">✕</b>';
+      c.querySelector('b').onclick=()=>{ if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能删除奖品 🔒'); return; } this.prizes.splice(i,1); store.set('prizes',this.prizes); this.renderChips(); this.draw(); };
+      box.appendChild(c);
+    });
+  },
+  spin(){
+    if(this.spinning||this.prizes.length===0)return;
+    if(!this.canSpin()){ toast('只有服务端（创建房间的手机）能抽奖 🔒'); return; }
+    if(this.isUsedToday()){ toast('今天已经转过啦，明天再来 💗'); return; }
+    this.spinning=true; $('#wheelResult').textContent='转动中…';
+    const n=this.prizes.length, step=2*Math.PI/n;
+    const target=Math.floor(Math.random()*n); // 落到的扇区
+    const extraTurns=5+Math.floor(Math.random()*3);
+    // 指针在顶部 = 画布角度 -π/2；让目标扇区中心对齐指针
+    const pointer=-Math.PI/2;
+    const desiredFinal=pointer - target*step - step/2;
+    const mod=(x,m)=>((x%m)+m)%m;
+    const dest=mod(desiredFinal - this.angle, 2*Math.PI);
+    const total=extraTurns*2*Math.PI + dest;
+    const start=performance.now(), dur=3200, startA=this.angle;
+    const ease=t=>1-Math.pow(1-t,3);
+    const anim=now=>{
+      const t=Math.min(1,(now-start)/dur); const a=startA+total*ease(t);
+      this.angle=a; this.draw();
+      if(t<1) requestAnimationFrame(anim);
+      else{
+        this.angle=mod(this.angle,2*Math.PI); this.spinning=false;
+        // 由最终角度反推指针下方扇区，保证与视觉一致
+        const idx=Math.floor(mod(pointer - this.angle, 2*Math.PI)/step)%n;
+        const win=this.prizes[idx];
+        $('#wheelResult').textContent='🎉 结果是：'+win;
+        toast('🎉 '+win);
+        this.setUsedToday(); this.refreshLock(); this.pushLog(win); if(typeof achievements!=='undefined') achievements.add(1);
+      }
+    };
+    requestAnimationFrame(anim);
+  }
+};
+wheel.init();
+
+/* ================= 吃饭菜单 ================= */
+const DEFAULT_FOODS = {
+  早餐:['包子','豆浆油条','三明治','燕麦粥','煎蛋吐司'],
+  午餐:['黄焖鸡米饭','麻辣烫','螺蛳粉','番茄牛腩饭','咖喱饭','盖浇饭'],
+  晚餐:['火锅','炒菜套餐','寿司','披萨','沙拉轻食','牛肉面'],
+  夜宵:['烧烤','关东煮','泡面','炸鸡','水果捞']
+};
+const menu = {
+  cats:['早餐','午餐','晚餐','夜宵'], cur:'午餐',
+  foods:store.get('foods', null),
+  log:store.get('menuLog',[]),
+  // 自愈：确保 foods 是 {分类:[菜品...]} 的合法对象；若被历史 bug 搞坏/为空则恢复默认
+  normalizeFoods(save){
+    let f=this.foods;
+    const bad = !f || typeof f!=='object' || Array.isArray(f);
+    if(bad) f={};
+    let total=0;
+    this.cats.forEach(c=>{ if(!Array.isArray(f[c])) f[c]=[]; total+=f[c].length; });
+    if(total===0){ f=JSON.parse(JSON.stringify(DEFAULT_FOODS)); } // 完全空 → 恢复默认
+    this.foods=f;
+    if(save) store.set('foods', this.foods);
+  },
+  init(){ this.normalizeFoods(true); this.renderCats(); this.renderFoods(); this.bind(); this.renderLog(); },
+  renderCats(){
+    const box=$('#cats'); box.innerHTML='';
+    this.cats.forEach(c=>{ const d=document.createElement('div'); d.className='cat'+(c===this.cur?' on':'');
+      d.textContent=c; d.onclick=()=>{ this.cur=c; this.renderCats(); this.renderFoods(); $('#slot').textContent='想吃啥？'; };
+      box.appendChild(d); });
+  },
+  renderFoods(){
+    const box=$('#foodList'); if(!box) return; this.normalizeFoods(false); box.innerHTML='';
+    const list=this.foods[this.cur]||[];
+    if(!list.length){ box.innerHTML='<div class="log-empty" style="padding:6px;">这个分类还没菜，加一道吧 🍽️</div>'; return; }
+    list.forEach((p,i)=>{ const c=document.createElement('span'); c.className='chip'; c.innerHTML=escapeHtml(p)+' <b data-i="'+i+'">✕</b>';
+      c.querySelector('b').onclick=()=>{ this.foods[this.cur].splice(i,1); store.set('foods',this.foods); this.renderFoods(); toast('已删除 '+p); };
+      box.appendChild(c); });
+  },
+  bind(){
+    $('#decideBtn').onclick=()=>this.decide();
+    $('#addFood').onclick=()=>{ const v=$('#foodInput').value.trim(); if(!v)return; this.normalizeFoods(false);
+      if(this.foods[this.cur].includes(v)){ toast('已经有这道菜啦'); return; }
+      this.foods[this.cur].push(v); store.set('foods',this.foods); $('#foodInput').value=''; this.renderFoods(); toast('已加到「'+this.cur+'」🍱'); };
+    $('#resetFoods').onclick=()=>{ if(confirm('恢复默认菜品？会覆盖当前所有分类的菜品清单。')){ this.foods=JSON.parse(JSON.stringify(DEFAULT_FOODS)); store.set('foods',this.foods); this.renderFoods(); toast('已恢复默认菜品 🍽️'); } };
+    $('#clearMenuLog').onclick=()=>{ if(confirm('确定清空点菜记录？')){ this.log=[]; store.set('menuLog',[]); this.renderLog(); } };
+  },
+  mealByHour(h){ return h<11?'早餐':(h<14?'午餐':(h<21?'晚餐':'夜宵')); },
+  decide(){
+    const now=new Date(); const h=now.getHours();
+    const autoMeal=this.mealByHour(h);
+    let pool=(this.foods[autoMeal]||[]).slice();
+    if(pool.length===0){ pool=Object.values(this.foods).reduce((a,b)=>a.concat(b),[]); }
+    if(pool.length===0){ toast('还没有菜，先去加几道吧'); return; }
+    this.cur=autoMeal; this.renderCats();
+    const w=(typeof weather!=='undefined')?weather.state:null;
+    const recent=(this.log||[]).slice(0,3).map(x=>x.p);
+    const scored=pool.map(f=>{
+      let s=1;
+      if(recent.includes(f)) s*=0.25;                       // 近期吃过 → 降权，避免连吃
+      if(w){
+        const warm=/火|汤|热|烫|面|粥|煲|锅|咖|炖|牛腩|饭|关东煮|泡面|烧烤|麻辣/.test(f);
+        const cool=/沙拉|凉|冰|冷|水果|刺身|寿司|轻食/.test(f);
+        if(w.rain&&warm) s*=2.2;                            // 下雨 → 偏好热食
+        if(w.hot&&cool)  s*=2.2;                            // 炎热 → 偏好凉食
+        if(w.cold&&warm) s*=2.0;                           // 寒冷 → 偏好暖食
+      }
+      return {f, s: s*(0.6+Math.random()*0.8)};            // 留一点随机，保持新鲜感
+    });
+    scored.sort((a,b)=>b.s-a.s);
+    const pick=scored[0].f;
+    let reason='🤖 AI 为你精选';
+    if(recent.includes(pick)) reason='换个口味也不错：'+pick;
+    else if(w){
+      if(w.rain) reason='下雨天，热乎的「'+pick+'」最治愈 🌧️🔥';
+      else if(w.hot) reason='天热，「'+pick+'」刚好 🍃';
+      else if(w.cold) reason='天有点冷，「'+pick+'」暖暖胃 ❄️🔥';
+      else reason='天气不错，「'+pick+'」安排上 ☀️';
+    } else { reason='今天'+autoMeal+'，就吃「'+pick+'」吧'; }
+    const slot=$('#slot'); slot.classList.add('rolling');
+    let ticks=0; const max=22; const self=this;
+    const timer=setInterval(()=>{
+      slot.textContent=pool[Math.floor(Math.random()*pool.length)];
+      if(++ticks>=max){ clearInterval(timer); slot.classList.remove('rolling');
+        slot.textContent=pick;
+        const rEl=$('#eatReason'); if(rEl) rEl.textContent=reason;
+        self.pushLog(pick); if(typeof achievements!=='undefined') achievements.add(1);
+        toast('就吃 '+pick+' 吧！'); }
+    },70);
+  },
+  pushLog(food){
+    const t=new Date();
+    const pad=x=>(''+x).padStart(2,'0');
+    const ts=t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate())+' '+pad(t.getHours())+':'+pad(t.getMinutes());
+    this.log.unshift({t:ts, c:this.cur, p:food});
+    if(this.log.length>50) this.log=this.log.slice(0,50);
+    store.set('menuLog',this.log); this.renderLog();
+  },
+  renderLog(){
+    const box=$('#menuLog'); $('#menuLogCnt').textContent=this.log.length;
+    if(this.log.length===0){ box.innerHTML='<div class="log-empty">还没有记录，点「帮我决定」试试 🍱</div>'; return; }
+    box.innerHTML='';
+    this.log.forEach(it=>{
+      const d=document.createElement('div'); d.className='log-item';
+      d.innerHTML='<span class="t">'+it.t+' · '+escapeHtml(it.c)+'</span><span class="p">'+escapeHtml(it.p)+'</span>';
+      box.appendChild(d);
+    });
+  },
+};
+menu.init();
+
+/* ================= 签到打卡 ================= */
+const sign = {
+  records:store.get('records',[]), viewY:new Date().getFullYear(), viewM:new Date().getMonth(),
+  key(y,m,d){ const mm=(''+(m+1)).padStart(2,'0'), dd=(''+d).padStart(2,'0'); return y+'-'+mm+'-'+dd; },
+  has(y,m,d){ return this.records.includes(this.key(y,m,d)); },
+  init(){ this.render(); this.bind(); },
+  bind(){
+    $('#prevM').onclick=()=>{ this.viewM--; if(this.viewM<0){this.viewM=11;this.viewY--;} this.render(); };
+    $('#nextM').onclick=()=>{ this.viewM++; if(this.viewM>11){this.viewM=0;this.viewY++;} this.render(); };
+  },
+  render(){
+    const y=this.viewY, m=this.viewM;
+    $('#calMonth').textContent=y+'年 '+(m+1)+'月';
+    const cal=$('#cal'); cal.innerHTML='';
+    ['日','一','二','三','四','五','六'].forEach(d=>{ const e=document.createElement('div'); e.className='dow'; e.textContent=d; cal.appendChild(e); });
+    const first=new Date(y,m,1).getDay(); const days=new Date(y,m+1,0).getDate();
+    const today=new Date();
+    for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='day empty'; cal.appendChild(e); }
+    for(let d=1;d<=days;d++){
+      const e=document.createElement('div'); e.className='day'; e.textContent=d;
+      if(this.has(y,m,d)) e.classList.add('checked');
+      const isToday=(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d);
+      if(isToday) e.classList.add('today');
+      const tkey=this.key(y,m,d);
+      // 仅「今天」可打卡，过去/未来均锁定，不可补签
+      if(isToday){
+        e.onclick=()=>{
+          if(this.records.includes(tkey)){ this.records=this.records.filter(x=>x!==tkey); $('#signNote').textContent='已取消今天的打卡 💔'; }
+          else{ this.records.push(tkey); $('#signNote').textContent='打卡成功，爱你哟 💗'; if(typeof achievements!=='undefined') achievements.add(1); }
+          store.set('records',this.records); this.render();
+        };
+      } else {
+        e.classList.add('locked');
+      }
+      cal.appendChild(e);
+    }
+    this.renderStats();
+  },
+  renderStats(){
+    const rec=this.records.slice().sort();
+    $('#stTotal').textContent=rec.length;
+    // 当前连续（从今天往前）
+    let cur=0; const today=new Date();
+    for(let i=0;;i++){ const d=new Date(today.getFullYear(),today.getMonth(),today.getDate()-i);
+      if(this.records.includes(this.key(d.getFullYear(),d.getMonth(),d.getDate()))) cur++; else break; }
+    $('#stCur').textContent=cur;
+    // 最长连续
+    let max=0,run=0,prev=null;
+    rec.forEach(k=>{ const [yy,mm,dd]=k.split('-').map(Number);
+      const dt=new Date(yy,mm-1,dd);
+      if(prev&&(dt-prev===86400000)) run++; else run=1;
+      max=Math.max(max,run); prev=dt; });
+    $('#stMax').textContent=max;
+  }
+};
+sign.init();
+
+/* ================= 纪念日（支持多个） ================= */
+function annivCompute(dateStr){
+  const [y,m,d]=dateStr.split('-').map(Number);
+  const start=new Date(y,m-1,d);
+  const today=new Date(); const t0=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const diff=Math.floor((t0-start)/86400000);
+  if(diff<0) return {past:false,days:diff};
+  const days=diff+1; // 把今天也算上
+  let anniv=new Date(today.getFullYear(),m-1,d);
+  if(anniv<t0) anniv=new Date(today.getFullYear()+1,m-1,d);
+  const left=Math.floor((anniv-t0)/86400000);
+  const passed=(today.getMonth()>m-1)||(today.getMonth()===m-1&&today.getDate()>=d);
+  const years=today.getFullYear()-y-(passed?0:1);
+  return {past:true,days,left,years,isToday:left===0};
+}
+const love = {
+  list: store.get('anniversaries', []),
+  init(){ this.migrate(); this.render(); this.bind(); },
+  migrate(){
+    if((!this.list||this.list.length===0) && store.get('togetherDate', null)){
+      this.list=[{name:'在一起', date: store.get('togetherDate', null)}]; store.set('anniversaries', this.list);
+    }
+  },
+  bind(){
+    $('#addAnniv').onclick=()=>{
+      const name=($('#annivName').value.trim())||'纪念日';
+      const date=$('#annivDate').value;
+      if(!date){ toast('请选择日期 💕'); return; }
+      this.list.push({name,date}); store.set('anniversaries',this.list);
+      $('#annivName').value=''; $('#annivDate').value='';
+      this.render(); toast('已添加 '+name+' 💞');
+      if(typeof achievements!=='undefined') achievements.evaluate(false);
+    };
+  },
+  render(){
+    const box=$('#annivList'); box.innerHTML='';
+    if(!this.list||this.list.length===0){ box.innerHTML='<div class="log-empty">还没有纪念日，添加第一个吧 💗</div>'; return; }
+    this.list.forEach((a,i)=>{
+      const c=annivCompute(a.date);
+      let info;
+      if(!c.past) info='<span class="warn">这一天还没到呢</span>';
+      else info=(c.years>0?('已 '+c.years+' 年'):('已 '+c.days+' 天'))+' · 距'+(c.years+1)+'周年 '+(c.isToday?'🎉 今天！':c.left+'天');
+      const div=document.createElement('div'); div.className='anniv-item';
+      div.innerHTML='<div class="anniv-top"><span class="anniv-name">'+escapeHtml(a.name)+'</span><button class="anniv-del" data-i="'+i+'">✕</button></div>'+
+                    '<div class="anniv-date">'+a.date+'</div>'+
+                    '<div class="anniv-info">'+info+'</div>';
+      div.querySelector('.anniv-del').onclick=()=>{ this.list.splice(i,1); store.set('anniversaries',this.list); this.render(); if(typeof achievements!=='undefined') achievements.evaluate(false); };
+      box.appendChild(div);
+    });
+  }
+};
+love.init();
+
+/* ================= 今日运势 / 宜忌 ================= */
+const fortune = {
+  yi: store.get('fortune_yi',['撒娇','黏着你','吃甜品','说我爱你','一起散步','自拍','赖床','逛街','收礼物','窝沙发']),
+  ji: store.get('fortune_ji',['生气','冷战','熬夜','挑食','耍小性子','晚归','看手机不理我','皱眉']),
+  lines:['今天也要开开心心呀','你是我的小太阳','世界很甜因为你','想一直陪着你','今天适合被宠着','桃花运+1，全给你'],
+  colors:['粉色','浅紫','奶白','薄荷绿','樱红','天蓝','鹅黄'],
+  init(){ this.render(); },
+  pick(n, pool, rng){ const arr=pool.slice(), out=[]; for(let i=0;i<n&&arr.length;i++){ out.push(arr.splice(Math.floor(rng()*arr.length),1)[0]); } return out; },
+  daily(){
+    const d=new Date(); const key=''+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    const rng=seedRand(hashStr(key));
+    return { key, yi:this.pick(3,this.yi,rng), ji:this.pick(3,this.ji,rng),
+      line:this.lines[Math.floor(rng()*this.lines.length)],
+      color:this.colors[Math.floor(rng()*this.colors.length)], num:Math.floor(rng()*9)+1,
+      idx: 60+Math.floor(rng()*41) };
+  },
+  render(){
+    const f=this.daily();
+    $('#fortuneStrip').innerHTML='今日宜：<b>'+f.yi.join('、')+'</b> ｜ 忌：<b>'+f.ji.join('、')+'</b>';
+    $('#fortuneBanner').innerHTML =
+      '<div class="date">'+f.key+'</div>'+
+      '<div class="yi">宜：<b>'+f.yi.join('、')+'</b></div>'+
+      '<div class="ji">忌：<b>'+f.ji.join('、')+'</b></div>'+
+      '<div class="line">「'+f.line+'」</div>'+
+      '<div class="luck">今日甜蜜指数：<b>'+f.idx+'</b> ｜ 幸运色：'+f.color+' ｜ 幸运数字：'+f.num+'</div>';
+  }
+};
+fortune.init();
+
+/* ================= 情侣积分 · 成就 ================= */
+const achievements = {
+  points: store.get('points', 0),
+  unlocked: store.get('achieved', []),
+  defs:[
+    {id:'first',   emoji:'🌟', name:'初次心动', desc:'累计 1 积分',    test:c=>c.points>=1},
+    {id:'sweet10', emoji:'💌', name:'小甜蜜',   desc:'累计 10 积分',   test:c=>c.points>=10},
+    {id:'sweet50', emoji:'💖', name:'甜度爆表', desc:'累计 50 积分',   test:c=>c.points>=50},
+    {id:'sign7',   emoji:'🔥', name:'七日之约', desc:'连续签到 7 天',  test:c=>c.streak>=7},
+    {id:'sign30',  emoji:'📅', name:'打卡达人', desc:'累计签到 30 天', test:c=>c.total>=30},
+    {id:'wheel5',  emoji:'🎡', name:'转盘新手', desc:'转盘转 5 次',    test:c=>c.wheel>=5},
+    {id:'menu20',  emoji:'🍱', name:'美食鉴赏', desc:'点菜 20 次',     test:c=>c.menu>=20},
+    {id:'photo10', emoji:'📸', name:'时光记录', desc:'每日一拍 10 张', test:c=>c.photos>=10},
+    {id:'oneyear', emoji:'💞', name:'一周年',   desc:'在一起满 1 年',  test:c=>c.maxYears>=1}
+  ],
+  ctx(){
+    const records=store.get('records',[]);
+    const today=new Date(); let streak=0;
+    for(let i=0;;i++){ const d=new Date(today.getFullYear(),today.getMonth(),today.getDate()-i);
+      const k=d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+(d.getDate())).padStart(2,'0');
+      if(records.includes(k)) streak++; else break; }
+    const anniv=store.get('anniversaries',[]); let maxYears=0;
+    anniv.forEach(a=>{ const c=annivCompute(a.date); if(c.past) maxYears=Math.max(maxYears,c.years); });
+    return { points:this.points, total:records.length, streak,
+      wheel:store.get('wheelLog',[]).length, menu:store.get('menuLog',[]).length,
+      photos:Object.keys(store.get('photos',{})).length, maxYears };
+  },
+  evaluate(announce){
+    const c=this.ctx();
+    const newly=[];
+    this.defs.forEach(d=>{ if(!this.unlocked.includes(d.id) && d.test(c)){ this.unlocked.push(d.id); newly.push(d); } });
+    if(newly.length) store.set('achieved', this.unlocked);
+    if(announce) newly.forEach(d=> toast('🏆 解锁成就：'+d.name));
+    this.render();
+  },
+  add(n){ this.points+=n; store.set('points', this.points); this.evaluate(true); },
+  render(){
+    if($('#achPoints')) $('#achPoints').textContent='💎 '+this.points;
+    if($('#homePoints')) $('#homePoints').textContent='💎 积分 '+this.points;
+    const grid=$('#achGrid'); if(!grid) return;
+    grid.innerHTML='';
+    this.defs.forEach(d=>{
+      const on=this.unlocked.includes(d.id);
+      const el=document.createElement('div'); el.className='badge'+(on?' on':' locked');
+      el.innerHTML='<div class="b-emoji">'+(on?d.emoji:'🔒')+'</div>'+
+                   '<div class="b-name">'+d.name+'</div>'+
+                   '<div class="b-desc">'+d.desc+'</div>';
+      grid.appendChild(el);
+    });
+  },
+  init(){ this.evaluate(false); this.render(); }
+};
+achievements.init();
+
+/* ================= 首页仪表盘 ================= */
+/* ================= 特殊节日 · 礼物抽奖 ================= */
+const FEST_BUILTIN = [
+  {key:'214',  name:'情人节',   emoji:'💘', m:2,  d:14, note:'西方情人节'},
+  {key:'314',  name:'白色情人节', emoji:'🌷', m:3,  d:14, note:'回礼日'},
+  {key:'520',  name:'520',     emoji:'💝', m:5,  d:20, note:'我爱你 · 表白日'},
+  {key:'521',  name:'521',     emoji:'💞', m:5,  d:21, note:'我愿意'},
+  {key:'920',  name:'920',     emoji:'🌹', m:9,  d:20, note:'就爱你'},
+  {key:'1111', name:'双十一',   emoji:'🛍️', m:11, d:11, note:'买买买 · 宠爱日'},
+  {key:'1224', name:'平安夜',   emoji:'🔔', m:12, d:24, note:'圣诞前夜'},
+  {key:'1225', name:'圣诞节',   emoji:'🎄', m:12, d:25, note:'Merry 甜心'},
+  {key:'1231', name:'跨年',     emoji:'🎆', m:12, d:31, note:'一起倒数'},
+  {key:'101',  name:'元旦',     emoji:'🎊', m:1,  d:1,  note:'新年第一份甜'}
+];
+function festNext(m,d){
+  const t=new Date(); const t0=new Date(t.getFullYear(),t.getMonth(),t.getDate());
+  let y=t0.getFullYear(); let cand=new Date(y,m-1,d);
+  if(cand<t0){ y++; cand=new Date(y,m-1,d); }
+  const days=Math.round((cand-t0)/86400000);
+  return {date:cand, days, year:y};
+}
+const festival = {
+  customs: store.get('festivals', []),
+  init(){ this.bind(); this.render(); },
+  bind(){
+    $('#addFest').onclick=()=>{
+      const name=($('#festName').value.trim())||'节日';
+      const m=parseInt($('#festMonth').value,10), d=parseInt($('#festDay').value,10);
+      if(!(m>=1&&m<=12&&d>=1&&d<=31)){ toast('请填写正确的月/日 💕'); return; }
+      this.customs.push({id:Date.now(), name, m, d}); store.set('festivals',this.customs);
+      $('#festName').value=''; $('#festMonth').value=''; $('#festDay').value='';
+      this.render(); toast('已添加 '+name+' 🎉');
+    };
+  },
+  all(){
+    const out=[];
+    FEST_BUILTIN.forEach(f=>{ const n=festNext(f.m,f.d); out.push({name:f.name, emoji:f.emoji, note:f.note, days:n.days, isToday:n.days===0, type:'builtin'}); });
+    (this.customs||[]).forEach(f=>{ const n=festNext(f.m,f.d); out.push({name:f.name, emoji:'🎉', note:'自定义', days:n.days, isToday:n.days===0, type:'custom', id:f.id}); });
+    const annivs=store.get('anniversaries',[])||[];
+    annivs.forEach(a=>{ const c=annivCompute(a.date); out.push({name:a.name+' · 周年', emoji:'💞', note:a.date, days:c.isToday?0:c.left, isToday:c.isToday, type:'anniv'}); });
+    out.sort((a,b)=>a.days-b.days);
+    return out;
+  },
+  next(){ const a=this.all(); return a.length?a[0]:null; },
+  render(){
+    // 跨设备同步可能产生同名节日，按 名称+月日 去重
+    const before=this.customs.length;
+    this.customs=this.customs.filter((f,i)=>this.customs.findIndex(x=>(x.name===f.name&&x.m===f.m&&x.d===f.d))===i);
+    if(this.customs.length!==before) store.set('festivals',this.customs);
+    const box=$('#festList'); if(!box) return; box.innerHTML='';
+    const list=this.all();
+    if(list.length===0){ box.innerHTML='<div class="log-empty">还没有节日，加一个吧 💗</div>'; }
+    list.forEach(f=>{
+      const days=f.isToday?'🎉 就是今天！':('还有 '+f.days+' 天');
+      const div=document.createElement('div'); div.className='fest-item'+(f.isToday?' today':'');
+      div.innerHTML='<span class="fest-emoji">'+f.emoji+'</span><span class="fest-name">'+escapeHtml(f.name)+'</span><span class="fest-days">'+days+'</span>'+
+        (f.type==='custom'?'<button class="fest-del" data-id="'+f.id+'">✕</button>':'');
+      box.appendChild(div);
+    });
+    box.querySelectorAll('.fest-del').forEach(b=>{ b.onclick=()=>{ const id=Number(b.dataset.id); this.customs=this.customs.filter(x=>x.id!==id); store.set('festivals',this.customs); this.render(); toast('已删除 💔'); }; });
+    const today=list.find(f=>f.isToday);
+    const banner=$('#festToday');
+    if(banner){ if(today){ banner.querySelector('.ft-text').textContent='🎉 今天是 '+today.name+'，抽个礼物送给 TA 吧！'; banner.style.display=''; } else { banner.style.display='none'; } }
+  }
+};
+/* ================= 今日天气 + 温馨提醒 ================= */
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function pd(s){ const a=s.split('-').map(Number); return new Date(a[0],a[1]-1,a[2]); }
+function wxDesc(code){ const m={0:'晴',1:'晴',2:'少云',3:'多云',45:'雾',48:'雾',51:'毛毛雨',53:'小雨',55:'中雨',56:'冻雨',57:'冻雨',61:'小雨',63:'中雨',65:'大雨',66:'冻雨',67:'冻雨',71:'小雪',73:'中雪',75:'大雪',77:'雪粒',80:'阵雨',81:'阵雨',82:'强阵雨',85:'阵雪',86:'阵雪',95:'雷阵雨',96:'雷阵雨伴冰雹',99:'强雷暴'}; return m[code]||'未知'; }
+function wxEmoji(code){ if(code===0||code===1) return '☀️'; if(code===2) return '🌤️'; if(code===3) return '☁️';
+  if([45,48,51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code)) return '🌧️';
+  if([71,73,75,77,85,86].includes(code)) return '🌨️'; if([95,96,99].includes(code)) return '⛈️'; return '🌡️'; }
+const weather = {
+  state:null,
+  computeState(w){ const rain=[45,48,51,53,55,56,57,61,63,65,66,67,80,81,82].includes(w.code);
+    return {temp:w.temp, code:w.code, rain, hot:w.temp>=30, cold:w.temp<=8, desc:w.desc}; },
+  init(){ this.show(); this.load(); const r=$('#weatherRefresh'); if(r) r.onclick=()=>this.load(); },
+  show(){ const w=JSON.parse(localStorage.getItem('couple_weather')||'null'); const t=$('#homeWeatherTxt'); if(!w){ this.state=null; if(t) t.textContent='点「刷新」获取天气 ☀️'; return; }
+    this.state=this.computeState(w);
+    const rain=this.state.rain;
+    if(t) t.innerHTML='<b>'+Math.round(w.temp)+'°</b> '+w.desc+(rain?' · <span class="w-remind">记得带伞 ☔</span>':' · 今天也要开开心心'); },
+  load(){ if(!navigator.geolocation){ const t=$('#homeWeatherTxt'); if(t) t.textContent='需要定位权限才能看天气'; return; }
+    const t=$('#homeWeatherTxt'); if(t) t.textContent='正在获取天气…';
+    navigator.geolocation.getCurrentPosition(pos=>this.fetch(pos.coords.latitude,pos.coords.longitude), ()=>{ if(t) t.textContent='定位失败，无法获取天气'; }, {timeout:8000}); },
+  async fetch(lat,lon){ try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?current=temperature_2m,weather_code,precipitation&latitude='+lat+'&longitude='+lon+'&timezone=auto');
+    const j=await r.json(); const c=j.current||{}; const w={temp:c.temperature_2m, code:c.weather_code, desc:wxDesc(c.weather_code), emoji:wxEmoji(c.weather_code)};
+    localStorage.setItem('couple_weather', JSON.stringify(w)); this.state=this.computeState(w); this.show();
+  }catch(e){ const t=$('#homeWeatherTxt'); if(t) t.textContent='天气获取失败，点刷新重试'; } }
+};
+
+/* ================= 情侣日记 ================= */
+const diary = {
+  list: (store.get('diary', [])||[]),
+  init(){ this.bind(); this.render(); },
+  bind(){ $('#saveDiary').onclick=()=>{
+    try{
+      const v=$('#diaryInput').value.trim(); if(!v){ toast('写点什么吧～'); return; }
+      const title=$('#diaryTitle').value.trim();
+      const today=ymd(new Date()); const i=this.list.findIndex(x=>x.date===today);
+      const entry={date:today,title,text:v};
+      if(i>=0) this.list[i]=entry; else this.list.push(entry);
+      store.set('diary',this.list); $('#diaryInput').value=''; $('#diaryTitle').value=''; this.render(); toast('记好啦 💗');
+    }catch(e){ toast('保存出错了，再试一次'); }
+  }; },
+  render(){ this.list=(store.get('diary',[])||[]); const box=$('#diaryList'); if(!box) return; box.innerHTML='';
+    if(!this.list.length){ box.innerHTML='<div class="log-empty">还没有日记，写下第一篇吧 📝</div>'; return; }
+    const arr=(this.list||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
+    arr.forEach(d=>{ const div=document.createElement('div'); div.className='diary-item';
+      div.innerHTML='<button class="diary-del">✕</button><div class="diary-date">'+d.date+(d.title?(' · '+escapeHtml(d.title)):'')+'</div><div class="diary-text">'+escapeHtml(d.text)+'</div>';
+      div.querySelector('.diary-del').onclick=()=>{ this.list=this.list.filter(x=>x.date!==d.date); store.set('diary',this.list); this.render(); };
+      box.appendChild(div); }); }
+};
+
+/* ================= 夸夸系统 ================= */
+const PRAISE_DEF = ['你笑起来的样子最好看了','你今天也太好看了吧','你怎么连生气都这么可爱','和你在一起的时间总是过得特别快','你的声音是我最喜欢的BGM','你认真的样子真的很有魅力','全世界你最甜','被你喜欢真是我的运气','你是我每天想见的人','你的小脾气我都喜欢','你眼光真好，挑了我','你是我所有温柔的理由','你今天的美貌超标了','和你聊天是我的快乐源泉','你存在的本身就是惊喜','你是我最想宠的人','你的可爱浓度今天爆表','你撒娇的样子我根本扛不住','你是我心里的头等大事','怎么会有你这么好的女孩子'];
+const praise = {
+  custom: store.get('praiseCustom', []),
+  init(){ this.bind(); this.refreshLock(); },
+  bind(){ $('#praiseBtn').onclick=()=>{ const list=this.custom.concat(PRAISE_DEF); $('#praiseResult').textContent=list[Math.floor(Math.random()*list.length)]; };
+    $('#addPraise').onclick=()=>{ if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能添加夸夸 🔒'); return; } const v=$('#praiseInput').value.trim(); if(!v)return; this.custom.push(v); store.set('praiseCustom',this.custom); $('#praiseInput').value=''; toast('已收藏这句夸夸 💖'); }; },
+  canEdit(){ return !syncRef || syncRef.role!=='client'; },
+  refreshLock(){
+    const addBtn=$('#addPraise'), input=$('#praiseInput');
+    if(!this.canEdit()){ if(addBtn){ addBtn.classList.add('locked'); addBtn.disabled=true; } if(input){ input.disabled=true; input.placeholder='🔒 只有服务端能添加夸夸'; } }
+    else { if(addBtn){ addBtn.classList.remove('locked'); addBtn.disabled=false; } if(input){ input.disabled=false; input.placeholder='想加一句专属夸夸'; } }
+  },
+  render(){},
+  daily(){ const list=this.custom.concat(PRAISE_DEF); return list[hashStr(ymd(new Date()))%list.length]; }
+};
+
+/* ================= 紧急按钮（定位 + 时光胶囊） ================= */
+const DEV = (function(){ let d=localStorage.getItem('couple_devid'); if(!d){ d=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('couple_devid', d); } return d; })();
+const sos = {
+  init(){ this.bind(); this.render(); },
+  bind(){
+    $('#sosBtn').onclick=()=>this.trigger();
+    $('#sosClose').onclick=()=>$('#sosOverlay').classList.remove('show');
+    $('#sosCopy').onclick=()=>{ const t=$('#sosMsg').textContent; if(navigator.clipboard) navigator.clipboard.writeText(t); toast('已复制，去微信发给 TA 💗'); };
+    $('#addCapsule').onclick=()=>{ const text=$('#capsuleText').value.trim(); const reveal=$('#capsuleDate').value; if(!text||!reveal){ toast('写点话并选个揭晓日期 💌'); return; }
+      const list=store.get('capsules',[]); list.push({text,reveal}); store.set('capsules',list); $('#capsuleText').value=''; $('#capsuleDate').value=''; this.render(); toast('胶囊已封存 💌'); };
+    $('#sosAck').onclick=()=>{ const list=store.get('sos',[]).filter(s=>s.from===DEV); store.set('sos',list); this.render(); if(typeof home!=='undefined') home.render(); if(typeof sync!=='undefined') sync.send({kind:'ack'}); toast('已联系 💗'); };
+  },
+  alarm(){
+    try{
+      const AC = window.AudioContext||window.webkitAudioContext;
+      if(AC){ const ac=new AC();
+        const beep=t=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type='square'; o.frequency.value=880; o.connect(g); g.connect(ac.destination); const now=ac.currentTime+t; g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.3, now+0.02); g.gain.exponentialRampToValueAtTime(0.0001, now+0.28); o.start(now); o.stop(now+0.3); };
+        for(let i=0;i<5;i++) beep(i*0.34);
+        setTimeout(()=>{ try{ ac.close(); }catch(e){} }, 2200);
+      }
+    }catch(e){}
+    if(navigator.vibrate) try{ navigator.vibrate([400,150,400,150,400,150,400]); }catch(e){}
+  },
+  trigger(){ $('#sosBtn').textContent='定位中…';
+    const done=(lat,lon)=>{ const capsule=$('#sosCapsule').value.trim();
+      const build=(addr)=>{ const s={t:Date.now(), lat, lon, loc:addr, capsule, from:DEV};
+        const list=store.get('sos',[]); list.push(s); store.set('sos',list);
+        if(typeof sync!=='undefined' && sync.conn && sync.conn.open) sync.send({kind:'sos', sos:s});
+        $('#sosBtn').textContent='🆘 我需要你'; this.confirm(s); this.render(); if(typeof home!=='undefined') home.render(); };
+      if(lat!=null){ fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+lat+'&longitude='+lon+'&localityLanguage=zh').then(r=>r.json()).then(g=>{ const addr=(g.principalSubdivision||'')+' '+(g.city||g.locality||''); build(addr.trim()||(lat+','+lon)); }).catch(()=>build(lat+','+lon)); }
+      else build('定位未获取'); };
+    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>done(p.coords.latitude,p.coords.longitude), ()=>done(null,null), {timeout:9000});
+    else done(null,null);
+  },
+  confirm(s){ this.alarm(); const time=new Date(s.t).toLocaleString('zh-CN');
+    const map=s.lat!=null?('\n地图：https://maps.google.com/?q='+s.lat+','+s.lon):'';
+    const msg='我需要你 🆘\n时间：'+time+'\n地点：'+(s.loc||'')+map+(s.capsule?('\n\n'+s.capsule):'');
+    $('#sosMsg').textContent=msg; $('#sosOverlay').classList.add('show'); },
+  receive(s){ const list=store.get('sos',[]); if(list.some(x=>x.t===s.t)) return; // 去重：忽略自己发的/已收到的，避免重连重复弹窗
+    list.push(s); store.set('sos',list); if(typeof home!=='undefined') home.render(); this.render(); this.alarm();
+    toast('🆘 TA 需要你！'); },
+  render(){ const box=$('#capsuleList'); if(!box) return; box.innerHTML='';
+    const list=store.get('capsules',[]); const today=ymd(new Date());
+    if(!list.length){ box.innerHTML='<div class="log-empty">还没有时光胶囊 💌</div>'; return; }
+    list.slice().sort((a,b)=>a.reveal<b.reveal?1:-1).forEach(c=>{ const revealed=c.reveal<=today; const div=document.createElement('div'); div.className='capsule-item'+(revealed?' capsule-revealed':'');
+      div.innerHTML='<div class="capsule-meta">'+(revealed?'💌 已揭晓（'+c.reveal+'）':'⏳ '+c.reveal+' 揭晓')+'</div><div class="capsule-text">'+escapeHtml(c.text)+'</div>';
+      box.appendChild(div); }); }
+};
+
+/* ================= 今日任务 · AI 随机 ================= */
+const TASK_DEF = ['亲她一下','一起散步十分钟','一起拍张照','一起喝奶茶','一起看一集剧','给她按按肩','说一句真心话','牵手逛逛街','写张小纸条给她','一起听首歌','抱抱十秒','一起做个小手工','视频通话聊聊天','一起做顿饭','夸她一句好看','给她讲个冷笑话','一起玩个小游戏','睡前互道晚安'];
+const task = {
+  custom: store.get('taskCustom', []),
+  done: store.get('taskDone', []),
+  seedMap: store.get('taskSeed', {}),
+  get today(){ return ymd(new Date()); },
+  combined(){ return this.custom.concat(TASK_DEF); },
+  seed(){ return this.seedMap[this.today]!=null ? this.seedMap[this.today] : hashStr('T'+this.today); },
+  daily(){
+    const all=this.combined(); const rng=seedRand(this.seed());
+    const pool=all.map((_,i)=>i), idxs=[];
+    for(let i=0;i<Math.min(1,pool.length);i++){ const k=Math.floor(rng()*pool.length); idxs.push(pool.splice(k,1)[0]); }
+    return idxs.map(i=>({i, text:all[i]}));
+  },
+  isDone(i){ return this.done.includes(this.today+'#'+i); },
+  toggle(i){ const k=this.today+'#'+i; const j=this.done.indexOf(k);
+    if(j>=0) this.done.splice(j,1); else this.done.push(k);
+    store.set('taskDone',this.done); this.render(); this.renderHome(); this.renderDone(); },
+  // 解析 "日期#索引" → {date, text}
+  parseDone(k){ const p=String(k).split('#'); const date=p[0]||''; const i=parseInt(p[1],10);
+    const all=this.combined(); const text=(!isNaN(i)&&all[i]!=null)?all[i]:'（已完成的小任务）'; return {date, text}; },
+  renderDone(){
+    const box=$('#taskDoneList'); const cnt=$('#taskDoneCnt'); if(!box) return;
+    const list=(this.done||[]).slice().sort((a,b)=>a<b?1:-1);
+    if(cnt) cnt.textContent=list.length;
+    if(!list.length){ box.innerHTML='<div class="log-empty">还没有完成的任务，一起去完成吧 💪</div>'; return; }
+    box.innerHTML='';
+    list.forEach(k=>{ const d=this.parseDone(k); const row=document.createElement('div'); row.className='log-item';
+      row.innerHTML='<span class="t">'+escapeHtml(d.date)+'</span><span class="p">✅ '+escapeHtml(d.text)+'</span>';
+      box.appendChild(row); });
+  },
+  bind(){
+    $('#addTask').onclick=()=>{ const v=$('#taskInput').value.trim(); if(!v)return; this.custom.push(v); store.set('taskCustom',this.custom); $('#taskInput').value=''; this.renderChips(); this.render(); this.renderHome(); this.renderDone(); };
+    const cl=$('#clearTaskDone'); if(cl) cl.onclick=()=>{ if(confirm('确定清空全部已完成记录？')){ this.done=[]; store.set('taskDone',this.done); this.render(); this.renderHome(); this.renderDone(); } };
+  },
+  renderChips(){
+    const box=$('#taskCustomList'); if(!box)return; box.innerHTML='';
+    this.custom.forEach((p,i)=>{ const c=document.createElement('span'); c.className='chip'; c.innerHTML=escapeHtml(p)+' <b data-i="'+i+'">✕</b>';
+      c.querySelector('b').onclick=()=>{ this.custom.splice(i,1); store.set('taskCustom',this.custom); this.renderChips(); this.render(); this.renderHome(); };
+      box.appendChild(c); });
+  },
+  render(){
+    const box=$('#taskList'); if(!box)return; box.innerHTML='';
+    this.daily().forEach(t=>{
+      const d=document.createElement('div'); d.className='task-item'+(this.isDone(t.i)?' done':'');
+      d.innerHTML='<div class="task-check'+(this.isDone(t.i)?' on':'')+'">✓</div><div class="task-txt">'+escapeHtml(t.text)+'</div>';
+      d.querySelector('.task-check').onclick=()=>this.toggle(t.i);
+      box.appendChild(d);
+    });
+  },
+  renderHome(){
+    const box=$('#homeTaskList'); if(!box)return; box.innerHTML='';
+    const list=this.daily(); let n=0;
+    list.forEach(t=>{ if(this.isDone(t.i)) n++;
+      const d=document.createElement('div'); d.className='task-item'+(this.isDone(t.i)?' done':'');
+      d.innerHTML='<div class="task-check'+(this.isDone(t.i)?' on':'')+'">✓</div><div class="task-txt">'+escapeHtml(t.text)+'<span class="task-prog">'+(this.isDone(t.i)?'已完成':'待完成')+'</span></div>';
+      d.querySelector('.task-check').onclick=()=>this.toggle(t.i);
+      box.appendChild(d);
+    });
+    const prog=document.createElement('div'); prog.style.cssText='font-size:12px;color:#ff9bb3;margin-top:6px;text-align:center;';
+    prog.textContent= list.length ? (this.isDone(list[0].i)?'今日任务已完成，超甜！💕':'今天一起完成它吧～') : '今天没有任务';
+    box.appendChild(prog);
+  },
+  init(){ this.bind(); this.renderChips(); this.render(); this.renderDone(); }
+};
+
+const home = {
+  init(){ this.bind(); this.render(); },
+  bind(){
+    $('#homeGrid').querySelectorAll('button').forEach(b=>{
+      b.onclick=()=>{ const c=b.dataset.go;
+        document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+        document.querySelectorAll('.card').forEach(x=>x.classList.remove('active'));
+        const navBtn=document.querySelector('nav button[data-card="'+c+'"]'); if(navBtn)navBtn.classList.add('on');
+        const card=$('#card-'+c); if(card)card.classList.add('active');
+        if(c==='wheel'&&typeof wheel!=='undefined') wheel.refreshLock();
+        if(c==='praise'&&typeof praise!=='undefined') praise.refreshLock();
+      };
+    });
+  },
+  render(){
+    // 问候
+    const name=store.get('herName','宝贝');
+    $('#homeGreet').textContent=name+'，今天也要开开心心呀～';
+    // 纪念日列表（支持多个）
+    const annivs=store.get('anniversaries',[]);
+    const al=$('#homeAnnivList'); al.innerHTML='';
+    if(!annivs||annivs.length===0){ al.innerHTML='<div class="hc-sub">还没有纪念日，去「💞 纪念日」添加吧 💗</div>'; }
+    else {
+      annivs.forEach(a=>{
+        const c=annivCompute(a.date); let txt;
+        if(!c.past) txt='<span class="warn">未到</span>';
+        else txt=(c.years>0?('已'+c.years+'年'):('已'+c.days+'天'))+' · 距'+(c.years+1)+'周年 '+(c.isToday?'🎉今天':c.left+'天');
+        const row=document.createElement('div'); row.className='anniv-row';
+        row.innerHTML='<span class="an">💞 '+escapeHtml(a.name)+'</span><span class="ai">'+txt+'</span>';
+        al.appendChild(row);
+      });
+    }
+    // 今日运势一句话
+    const f=fortune.daily();
+    $('#homeLine').textContent='「'+f.line+'」';
+    $('#homeYiJi').innerHTML='宜：<b>'+f.yi.join('、')+'</b> ｜ 忌：<b>'+f.ji.join('、')+'</b>';
+    const fi=$('#homeFortuneIdx'); if(fi) fi.innerHTML='今日甜蜜指数：<b>'+f.idx+'</b> 💗';
+    // 情话/心情
+    if(typeof mood!=='undefined') mood.render();
+    if(typeof achievements!=='undefined') achievements.render();
+    if(typeof festival!=='undefined'){
+      const nf=festival.next(); const fn=$('#homeFestNext');
+      if(fn){ if(nf){ fn.innerHTML='<div class="anniv-row"><span class="an">'+nf.emoji+' '+escapeHtml(nf.name)+'</span><span class="ai">'+(nf.isToday?'🎉 今天！':('还有 '+nf.days+' 天'))+'</span></div>'; }
+        else { fn.innerHTML='<div class="hc-sub">暂无，去「🎉 节日」添加</div>'; } }
+    }
+    if(typeof weather!=='undefined') weather.show();
+    if(typeof praise!=='undefined'){ const pt=$('#homePraiseTxt'); if(pt) pt.textContent=praise.daily(); }
+    if(typeof task!=='undefined') task.renderHome();
+    if(typeof sos!=='undefined'){
+      const list=store.get('sos',[]).filter(s=>s.from&&s.from!==DEV);
+      const banner=$('#homeSos');
+      if(banner){ if(list.length){ const s=list[list.length-1]; const time=new Date(s.t).toLocaleString('zh-CN'); banner.style.display=''; $('#homeSosTxt').innerHTML='🆘 TA 需要你<br><span style="font-size:13px;font-weight:400;">'+(s.loc?escapeHtml(s.loc)+' · ':'')+time+'</span>'; } else { banner.style.display='none'; } }
+    }
+  }
+};
+
+/* ================= 每日情话 / 心情日记 ================= */
+const mood = {
+  LINES:['遇见你之后，我的保质期是永远','你是我的今天，也是我的每天','世界很甜，因为你','想和你一起浪费所有好时光','你是我的小太阳，照亮每一天','今天也想被你宠着','我的浪漫，都是从你开始的','有你在，每天都是好日子','你是我所有温柔的来源','想把最好的一切都给你'],
+  data:store.get('moods',{}),
+  todayKey(){ const t=new Date(); return t.getFullYear()+'-'+(''+(t.getMonth()+1)).padStart(2,'0')+'-'+(''+t.getDate()).padStart(2,'0'); },
+  autoLine(){ return this.LINES[hashStr(this.todayKey())%this.LINES.length]; },
+  init(){ this.bind(); this.render(); },
+  bind(){
+    $('#moodEdit').onclick=()=>{
+      const t=this.data[this.todayKey()];
+      $('#moodInput').value=(t&&t.text)||this.autoLine();
+      $('#moodInput').style.display='block'; $('#moodInput').focus();
+      $('#moodEdit').style.display='none'; $('#moodSave').style.display='inline-block';
+    };
+    $('#moodSave').onclick=()=>{
+      const v=$('#moodInput').value.trim();
+      if(!v){ this.data[this.todayKey()]={text:this.autoLine(),bySelf:false}; }
+      else this.data[this.todayKey()]={text:v,bySelf:true};
+      store.set('moods',this.data); this.render();
+      $('#moodInput').style.display='none'; $('#moodEdit').style.display='inline-block'; $('#moodSave').style.display='none';
+    };
+  },
+  render(){
+    const t=this.data[this.todayKey()];
+    $('#moodText').textContent=(t&&t.text)||this.autoLine();
+  }
+};
+mood.init();
+home.init();
+festival.init();
+weather.init();
+diary.init();
+praise.init();
+sos.init();
+task.init();
+
+/* ================= 生理期提醒 ================= */
+const period = {
+  data: store.get('period', {last:null, cycle:28, dur:5}),
+  dates: store.get('periodDates', []),
+  init(){ this.bind(); this.fill(); this.render(); },
+  fill(){ if(this.data.last) $('#periodLast').value=this.data.last; $('#periodCycle').value=this.data.cycle; $('#periodDur').value=this.data.dur; this.renderDates(); },
+  bind(){ $('#savePeriod').onclick=()=>{ const last=$('#periodLast').value; if(!last){ toast('请先选上次开始日期'); return; }
+    this.data={ last, cycle:parseInt($('#periodCycle').value)||28, dur:parseInt($('#periodDur').value)||5 };
+    store.set('period',this.data); this.render(); toast('记好啦 💗'); };
+    $('#addPeriodDate').onclick=()=>{ const d=$('#periodAddDate').value||ymd(new Date()); if(!this.dates.includes(d)){ this.dates.push(d); store.set('periodDates',this.dates); this.renderDates(); this.render(); toast('已记录 '+d+' 💗'); } }; },
+  renderDates(){ const box=$('#periodDatesList'); if(!box) return; box.innerHTML='';
+    this.dates.slice().sort().forEach(d=>{ const el=document.createElement('span'); el.className='tag'; el.textContent=d;
+      el.onclick=()=>{ this.dates=this.dates.filter(x=>x!==d); store.set('periodDates',this.dates); this.renderDates(); this.render(); }; box.appendChild(el); }); },
+  render(){
+    const d=this.data; const arr=this.dates.slice().sort();
+    const today=new Date(); const t0=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    let nextDate=null, cycleUsed=d.cycle||28, src='';
+    if(arr.length>=2){ let sum=0; for(let i=1;i<arr.length;i++) sum+=(pd(arr[i])-pd(arr[i-1]))/86400000; const mean=Math.round(sum/(arr.length-1)); cycleUsed=mean;
+      let n=new Date(pd(arr[arr.length-1])); while(n<=t0){ n=new Date(n.getFullYear(),n.getMonth(),n.getDate()+cycleUsed); } nextDate=n;
+      src='（按 '+arr.length+' 次记录均值 '+mean+' 天，数据越多越准，误差约 ±1 天）'; }
+    else if(d.last){ const [y,m,day]=d.last.split('-').map(Number); let cur=new Date(y,m-1,day); while(cur<=t0){ cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+cycleUsed); } nextDate=cur; src='（按默认周期 '+cycleUsed+' 天）'; }
+    const res=$('#periodResult'); if(!nextDate){ res.textContent='设置上次日期或记录多次日期后自动预测'; return; }
+    const daysToNext=Math.floor((nextDate-t0)/86400000);
+    const prev=new Date(nextDate.getFullYear(),nextDate.getMonth(),nextDate.getDate()-cycleUsed);
+    const pe=new Date(prev.getFullYear(),prev.getMonth(),prev.getDate()+(d.dur||5));
+    const inPeriod=(t0>=prev)&&(t0<pe);
+    if(inPeriod){ const left=Math.floor((pe-t0)/86400000); res.textContent='🩸 经期进行中（还剩约 '+left+' 天）'; }
+    else if(daysToNext===0){ res.textContent='🩸 今天开始啦，照顾好她'; }
+    else { res.textContent='距离下次约还有 '+daysToNext+' 天 '+src+' 💗'; }
+  }
+};
+period.init();
+
+/* ================= 礼物灵感库 ================= */
+const gift = {
+  list: store.get('gifts', []),
+  init(){ this.bind(); this.render(); },
+  bind(){ $('#addGift').onclick=()=>{ const v=$('#giftInput').value.trim(); if(!v)return;
+    this.list.push({t:v,done:false}); store.set('gifts',this.list); $('#giftInput').value=''; this.render(); };
+    $('#giftRaffleBtn').onclick=()=>this.raffle();
+    $('#giftRaffleClose').onclick=()=>$('#giftRaffleOverlay').classList.remove('show');
+    $('#giftRaffleAgain').onclick=()=>this.raffle();
+    $('#giftRaffleOverlay').onclick=e=>{ if(e.target.id==='giftRaffleOverlay') e.currentTarget.classList.remove('show'); };
+  },
+  render(){
+    const box=$('#giftList'); box.innerHTML='';
+    if(this.list.length===0){ box.innerHTML='<div class="cal-note">还没有灵感，加一条吧～</div>'; return; }
+    this.list.forEach((g,i)=>{
+      const el=document.createElement('div'); el.className='gift-item'+(g.done?' done':'');
+      el.innerHTML='<span class="ck">'+(g.done?'✅':'⬜️')+'</span><span class="txt">'+escapeHtml(g.t)+'</span><button class="del">✕</button>';
+      el.querySelector('.ck').onclick=()=>{ this.list[i].done=!this.list[i].done; store.set('gifts',this.list); this.render(); };
+      el.querySelector('.del').onclick=()=>{ this.list.splice(i,1); store.set('gifts',this.list); this.render(); };
+      box.appendChild(el);
+    });
+  },
+  raffle(){
+    if(this.list.length===0){ toast('先去「🎁 礼物」加几件灵感吧～'); return; }
+    const pool=this.list.filter(g=>!g.done); const arr=pool.length?pool:this.list;
+    const ov=$('#giftRaffleOverlay'); const res=$('#giftRaffleResult');
+    ov.classList.add('show'); res.textContent='？';
+    let tick=0; const total=18; clearInterval(this._ri);
+    this._ri=setInterval(()=>{
+      res.textContent=arr[Math.floor(Math.random()*arr.length)].t;
+      if(++tick>=total){ clearInterval(this._ri); const pick=arr[Math.floor(Math.random()*arr.length)].t; res.textContent=pick; res.classList.add('pop'); setTimeout(()=>res.classList.remove('pop'),400); }
+    },70);
+  }
+};
+gift.init();
+
+/* ================= 每日一拍 ================= */
+const photo = {
+  data: store.get('photos', {}),
+  init(){ this.bind(); this.render(); },
+  bind(){ $('#photoBtn').onclick=()=>$('#photoInput').click();
+    $('#photoInput').onchange=e=>{ const f=e.target.files[0]; if(!f)return; this.add(f); e.target.value=''; }; },
+  todayKey(){ const d=new Date(); return ''+d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+d.getDate()).padStart(2,'0'); },
+  add(file){ compressImg(file, url=>{ this.data[this.todayKey()]=url; store.set('photos',this.data); this.render(); toast('今天的瞬间存好啦 📸'); if(typeof achievements!=='undefined') achievements.add(2); }); },
+  render(){
+    const box=$('#photoGrid'); box.innerHTML='';
+    const keys=Object.keys(this.data).sort().reverse();
+    if(keys.length===0){ box.innerHTML='<div class="cal-note">还没有照片，拍第一张吧 📷</div>'; return; }
+    keys.forEach(k=>{ const cell=document.createElement('div'); cell.className='photo-cell';
+      cell.innerHTML='<img src="'+this.data[k]+'" alt=""/><div class="pd">'+k.slice(5)+'</div><button class="pdel">✕</button>';
+      cell.querySelector('.pdel').onclick=()=>{ delete this.data[k]; store.set('photos',this.data); this.render(); };
+      box.appendChild(cell); });
+  }
+};
+photo.init();
+
+/* ================= 数据同步（点对点实时同步） ================= */
+// 角色变化时统一刷新所有「仅服务端可用」的锁定状态（转盘抽奖 / 夸夸添加）
+function refreshLocks(){ if(typeof wheel!=='undefined') wheel.refreshLock(); if(typeof praise!=='undefined') praise.refreshLock(); }
+/* ---------- 中转服务（Supabase，国内直连 · 自动实时同步） ---------- */
+/* 用原生 fetch 调 Supabase REST(PostgREST)，无需任何 CDN 库，国内加载更稳。
+   需要在 Supabase 建项目 → SQL Editor 执行建表语句 → 填入 Project URL + anon key。
+   表 gfsync：room(text 主键) / data(text) / updated_at(timestamptz)。数据用 upsert 覆盖同一房间行。 */
+const relay = {
+  room:null, role:null, _poll:null, _pushT:null, _last:null,
+  conf(){ try{ return JSON.parse(localStorage.getItem('gfapp_sb_conf')||'null'); }catch(e){ return null; } },
+  hasConf(){ const c=this.conf(); return !!(c&&c.url&&c.key); },
+  _hdr(){ const c=this.conf(); return { 'apikey': c.key, 'Authorization':'Bearer '+c.key, 'Content-Type':'application/json' }; },
+  _base(){ const c=this.conf(); return (c.url||'').replace(/\/+$/,'')+'/rest/v1/gfsync'; },
+  // 解析 JWT 的 role 声明：若填的是 service_role（secret）密钥，浏览器会被 Supabase 拒绝，提前警告
+  keyRole(key){ try{ const p=String(key||'').split('.')[1]; if(!p) return null;
+      const b=p.replace(/-/g,'+').replace(/_/g,'/'); const json=decodeURIComponent(escape(atob(b))); return (JSON.parse(json).role)||null; }catch(e){ return null; } },
+  // 设备唯一 ID（每台手机独立、持久，用于区分房间里不同成员）
+  _deviceId(){ let id; try{ id=localStorage.getItem('gfapp_device_id'); }catch(e){}
+    if(!id){ id='d'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4); try{ localStorage.setItem('gfapp_device_id', id); }catch(e){} }
+    return id; },
+  _nick(){ try{ const n=localStorage.getItem('gfapp_nickname'); return (n&&n.trim())?n.trim():('访客'+this._deviceId().slice(-3)); }catch(e){ return '访客'; } },
+  setRoom(room, role){
+    this.room=room; this.role=role;
+    if(syncRef) syncRef.role=role; // 让服务端/客户端权限门控生效
+    if(this.hasConf()) this.ensure();
+  },
+  ensure(){
+    if(!this.room || !this.hasConf()) return;
+    if(this.keyRole(this.conf().key)==='service_role'){ this.setStatus('⚠️ 中转填的是 service_role 密钥（secret），浏览器被禁用！请改用 anon public 密钥'); return; }
+    // 先拉对方已有数据，再上传本地（已合并后的），避免加入瞬间用空数据覆盖对方
+    (async()=>{ try{ await this.pullNow(); }catch(e){} try{ await this.pushNow(); }catch(e){} try{ await this.presencePush(); }catch(e){} try{ await this.presencePull(); }catch(e){} this.startPoll(); })();
+  },
+  async pushNow(){
+    if(!this.room || !this.hasConf()) return;
+    try{
+      // 先拉当前共享状态，再做 read-modify-write 合并再推回，
+      // 避免两端各自用完整快照 upsert 互相覆盖、丢失对方数据
+      let shared={data:{}, v:{}};
+      try{
+        const r=await fetch(this._base()+'?room=eq.'+encodeURIComponent(this.room)+'&select=data',{headers:this._hdr()});
+        const rows=await r.json();
+        if(rows&&rows[0]&&rows[0].data){ const s=JSON.parse(rows[0].data); shared={data:s.data||{}, v:s.v||{}}; }
+      }catch(e){}
+      const local=snapshot(); // {data, v}
+      const mergedData={}, mergedV={};
+      const keys=new Set([...Object.keys(shared.data), ...Object.keys(local.data)]);
+      for(const k of keys){
+        if(SYNC_SKIP.includes(k)) continue;
+        const lt=local.v[k]||0, st=shared.v[k]||0;
+        // 按键「最后写入者胜」：谁改得晚，谁整份值（含删除）覆盖对方。
+        // 只覆盖被改动过的键，未改动的键保持对方的值，因此不同模块互不影响，删除也能正确同步。
+        const lv = local.data[k]!=null?local.data[k]:shared.data[k];
+        const sv = shared.data[k]!=null?shared.data[k]:local.data[k];
+        const win = (lt>st) || (lt===st && lv>=sv);
+        mergedData[k] = win ? lv : sv; mergedV[k]=Math.max(lt,st);
+      }
+      const body=JSON.stringify({ room:this.room, data:JSON.stringify({data:mergedData, v:mergedV}), updated_at:new Date().toISOString() });
+      const r=await fetch(this._base(), { method:'POST',
+        headers:Object.assign({}, this._hdr(), { 'Prefer':'resolution=merge-duplicates' }), body });
+      if(r.ok) this.setStatus('【中转】已实时同步 💗');
+      else { const t=await r.text(); this.setStatus('中转上传失败 HTTP '+r.status+'：'+(t||'').slice(0,120)); }
+    }catch(e){ this.setStatus('中转上传失败：'+(e&&e.message||e)); }
+  },
+  push(){ if(this._pushT) clearTimeout(this._pushT); this._pushT=setTimeout(()=>this.pushNow(), 400); },
+  async pullNow(){
+    if(!this.room || !this.hasConf()) return;
+    try{
+      const r=await fetch(this._base()+'?room=eq.'+encodeURIComponent(this.room)+'&select=data', { headers:this._hdr() });
+      if(!r.ok){ const t=await r.text(); this.setStatus('中转拉取失败 HTTP '+r.status+'：'+(t||'').slice(0,120)); return; }
+      const rows=await r.json();
+      if(rows&&rows[0]&&rows[0].data && rows[0].data!==this._last){
+        this._last=rows[0].data;
+        try{ const snap=JSON.parse(rows[0].data); mergeSnap(snap); if(typeof refreshAll==='function') refreshAll(); this.setStatus('【中转】已实时同步 💗'); }catch(e){}
+      }
+    }catch(e){ this.setStatus('中转拉取失败：'+(e&&e.message||e)); }
+  },
+  // ===== 在线成员（presence）：复用 gfsync 表，用「房间号#p#设备ID」为主键各写一行 =====
+  _presKey(){ return this.room+'#p#'+this._deviceId(); },
+  async presencePush(){
+    if(!this.room || !this.hasConf()) return;
+    try{
+      const body=JSON.stringify({ room:this._presKey(), data:JSON.stringify({ name:this._nick(), dev:this._deviceId(), role:this.role, ts:Date.now() }), updated_at:new Date().toISOString() });
+      await fetch(this._base(), { method:'POST', headers:Object.assign({}, this._hdr(), { 'Prefer':'resolution=merge-duplicates' }), body });
+    }catch(e){}
+  },
+  async presencePull(){
+    if(!this.room || !this.hasConf()) return;
+    try{
+      const like=encodeURIComponent(this.room+'#p#')+'*';
+      const r=await fetch(this._base()+'?room=like.'+like+'&select=data', { headers:this._hdr() });
+      if(!r.ok){ this.renderMembers(null); return; }
+      const rows=await r.json(); const now=Date.now(); const mine=this._deviceId(); const list=[];
+      (rows||[]).forEach(row=>{ try{ const m=JSON.parse(row.data); if(m&&m.ts && (now-m.ts)<20000){ m.self=(m.dev===mine); list.push(m); } }catch(e){} });
+      list.sort((a,b)=>(a.self?-1:1)-(b.self?-1:1));
+      this.renderMembers(list);
+    }catch(e){ this.renderMembers(null); }
+  },
+  renderMembers(list){
+    const cnt=$('#memberCount'), box=$('#memberList');
+    const big=$('#roomStatusBar'), bt=$('#roomStatText');
+    if(!cnt||!box) return;
+    if(list===null){ cnt.textContent='（读取失败）'; if(big) big.style.display='none'; return; }
+    if(!list.length){ cnt.textContent='（0 人在线）'; box.textContent='还没有人在这个房间…'; if(big) big.style.display='none'; return; }
+    cnt.textContent='（'+list.length+' 人在线）';
+    box.innerHTML=list.map(m=>{
+      const nm=(m.name||'访客').replace(/[<>&]/g,'');
+      const tag=m.self?'（你）':''; const rr=m.role==='server'?'🏠主机':'📱客户端';
+      return '<div>🟢 <b>'+nm+'</b> <span style="color:#e84c88;">'+tag+'</span> <span style="color:#999;font-size:12px;">'+rr+'</span></div>';
+    }).join('');
+    // 顶部醒目房间状态条（无论用户在哪个子面板都能一眼看到）
+    if(big && bt){
+      big.style.display='flex';
+      const names=list.map(m=>{ const nm=(m.name||'访客').replace(/[<>&]/g,''); return m.self?('【'+nm+'】'):nm; }).join('、');
+      bt.innerHTML='🏠 房间 <b>'+this.room+'</b> · <b style="color:#e84c88;">'+list.length+'人在线</b>：'+names;
+    }
+    // 只有自己一个人时明确提醒：极可能房间号不一致 / 对方还没进来
+    if(list.length===1 && list[0].self){ this.setStatus('⚠️ 房间里只有你 1 人——请确认对方进的是同一个房间号'); }
+  },
+  // 真实读写回环测试：验证 Supabase 能否连通 + 匿名读写权限是否开放
+  async test(){
+    const msg=$('#lcTestMsg'); if(msg) msg.textContent='测试中…';
+    if(!this.hasConf()){ if(msg) msg.textContent='❌ 请先填写 Project URL 和 anon key，再点测试'; return; }
+    if(this.keyRole(this.conf().key)==='service_role'){ if(msg) msg.textContent='❌ 你填的是 service_role 密钥（secret），浏览器禁用！请改用 anon public 密钥（Settings→API 里 anon public 那一行）'; return; }
+    const testRoom='__test_'+Date.now();
+    try{
+      const w=await fetch(this._base(), { method:'POST',
+        headers:Object.assign({}, this._hdr(), { 'Prefer':'resolution=merge-duplicates' }),
+        body:JSON.stringify({ room:testRoom, data:'{"ok":1}', updated_at:new Date().toISOString() }) });
+      if(!w.ok){ const t=await w.text(); if(msg) msg.textContent='❌ 写入失败 HTTP '+w.status+'：'+(t||'').slice(0,160); return; }
+      const r=await fetch(this._base()+'?room=eq.'+encodeURIComponent(testRoom)+'&select=data', { headers:this._hdr() });
+      if(!r.ok){ const t=await r.text(); if(msg) msg.textContent='❌ 读取失败 HTTP '+r.status+'：'+(t||'').slice(0,160); return; }
+      const rows=await r.json();
+      if(!rows||!rows[0]){ if(msg) msg.textContent='❌ 读取返回空（gfsync 表可能没建，或匿名读权限未开放）'; return; }
+      try{ await fetch(this._base()+'?room=eq.'+encodeURIComponent(testRoom), { method:'DELETE', headers:this._hdr() }); }catch(e){}
+      if(msg) msg.textContent='✅ 连接成功！可正常读写，建房/加入后即自动同步';
+    }catch(e){ if(msg) msg.textContent='❌ 网络/请求异常：'+(e&&e.message||e); }
+  },
+  startPoll(){ if(this._poll) clearInterval(this._poll); const self=this;
+    this._poll=setInterval(()=>{ self.pullNow(); self.pushNow(); self.presencePush(); self.presencePull(); }, 3000); },
+  setStatus(t){ if(typeof sync!=='undefined' && sync.setStatus) sync.setStatus(t); },
+  // 主动离开：删除自己在房间里的 presence 行，让对方立即看到人数减少
+  async _leave(){ if(!this.room || !this.hasConf()) return;
+    try{ await fetch(this._base()+'?room=eq.'+encodeURIComponent(this._presKey()), { method:'DELETE', headers:this._hdr() }); }catch(e){} },
+  stop(){ if(this._poll) clearInterval(this._poll); this._poll=null;
+    try{ this._leave(); }catch(e){} this.room=null; this._last=null;
+    const cnt=$('#memberCount'), box=$('#memberList'); if(cnt) cnt.textContent='（未连接）'; if(box) box.textContent='连接房间后，这里会显示当前在同一房间的人 💗';
+    const big=$('#roomStatusBar'); if(big) big.style.display='none'; }
+};
+
+const sync = {
+  peer:null, conn:null, role:null, _remote:false,
+  _room:null, _role:null, _peerStarted:false,
+  _reconnectTimer:null, _reconnectDelay:1000, _closedByUser:false, _listenersBound:false,
+  init(){ syncRef=this; this.bind(); this.bindNetListeners();
+    // 预载二维码库，保证「分享此页面」按钮随时可用
+    if(typeof qrcode==='undefined') loadScript('https://unpkg.com/qrcode-generator@1.4.4/qrcode.js', ()=>{});
+    const useRelay = (typeof relay!=='undefined' && relay.hasConf());
+    // 1) 优先邀请链接 ?room=CODE 自动加入
+    try{ const p=new URLSearchParams(location.search).get('room');
+      if(p){ const code=p.toUpperCase();
+        this.role='client'; this._room=code; this._role='client'; this._persistConf(code,'client');
+        refreshLocks();
+        if(useRelay){ relay.setRoom(code,'client'); this.setStatus('正在通过中转服务连接…'); }
+        else { this.setStatus('正在通过邀请链接连接…'); this.connect(code,'client'); }
+        return; }
+      // 2) 否则自动接回上次的房间（记住房间，刷新/重开无需手动重连）
+      const conf=this._loadConf();
+      if(conf && conf.room){
+        this.role=conf.role||'client'; this._room=conf.room; this._role=conf.role||'client';
+        refreshLocks();
+        if(useRelay){ relay.setRoom(conf.room, conf.role||'client'); this.setStatus('正在通过中转服务接回房间 '+conf.room+' …'); }
+        else { this.setStatus('正在自动接回房间 '+conf.room+' …'); this.connect(conf.room, conf.role||'client'); }
+      }
+    }catch(e){}
+  },
+  // 本机连接配置持久化（不同步给对方；已在 SYNC_SKIP 中排除）
+  _persistConf(room, role){ try{ localStorage.setItem('gfapp_sync_conf', JSON.stringify({room, role})); }catch(e){} },
+  _loadConf(){ try{ return JSON.parse(localStorage.getItem('gfapp_sync_conf')||'null'); }catch(e){ return null; } },
+  _clearConf(){ try{ localStorage.removeItem('gfapp_sync_conf'); }catch(e){} },
+  // 网络恢复 / 切回前台时，若已配置房间但当前未连上后端，立即重连
+  bindNetListeners(){
+    if(this._listenersBound) return; this._listenersBound=true;
+    const kick=()=>{ if(this._room && !this._closedByUser){
+      // 已配置中转：重启中转轮询即可（它每 3 秒自动重连），绝不退回 PeerJS
+      if(typeof relay!=='undefined' && relay.hasConf()){ relay.ensure(); return; }
+      // 未配置中转：走 PeerJS 自动重连
+      if(!this.conn){ this._reconnectDelay=1000; clearTimeout(this._reconnectTimer); this.connect(this._room, this._role); }
+    } };
+    try{ window.addEventListener('online', kick); }catch(e){}
+    try{ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') kick(); }); }catch(e){}
+  },
+  // 断开当前房间并停止自动重连（清除记忆）
+  disconnect(){ this._closedByUser=true; clearTimeout(this._reconnectTimer); this._clearConf();
+    try{ if(this.conn) this.conn.close(); }catch(e){} try{ if(this.peer) this.peer.destroy(); }catch(e){}
+    try{ if(typeof relay!=='undefined') relay.stop(); }catch(e){}
+    this.conn=null; this.peer=null; this._room=null; this.role=null; this._peerStarted=false;
+    refreshLocks(); this.setStatus('已断开同步'); },
+  setStatus(t){ const el=$('#syncStatus'); if(el) el.textContent=t; },
+  genId(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<6;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; },
+  ensureLib(cb){
+    const need=[];
+    if(!window.Peer) need.push('https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js');
+    if(typeof qrcode==='undefined') need.push('https://unpkg.com/qrcode-generator@1.4.4/qrcode.js');
+    if(need.length===0){ cb(); return; }
+    let left=need.length; const step=()=>{ if(--left<=0) cb(); };
+    need.forEach(src=>loadScript(src, step));
+  },
+  bind(){
+    $('#syncCreate').onclick=()=>this.create();
+    $('#syncJoin').onclick=()=>this.join(($('#syncRoom').value||'').trim().toUpperCase());
+    $('#syncCopy').onclick=()=>{ const id=$('#syncId').textContent; if(id&&id!=='—'){ if(navigator.clipboard) navigator.clipboard.writeText(id); toast('房间号已复制 💗'); } };
+    $('#syncShare').onclick=()=>this.renderShareQR();
+    $('#syncExport').onclick=()=>this.exportData();
+    $('#syncImport').onclick=()=>$('#syncFile').click();
+    $('#lcSave').onclick=()=>{ const url=$('#sbUrl').value.trim(), key=$('#sbKey').value.trim();
+      if(!url||!key){ toast('请填写 Project URL 和 anon key'); return; }
+      if(typeof relay!=='undefined' && relay.keyRole(key)==='service_role'){ const s=$('#lcState'); if(s) s.textContent='⚠️ 这是 service_role 密钥，浏览器禁用，请改用 anon public'; toast('请改用 anon public 密钥（不是 service_role）'); const m=$('#lcTestMsg'); if(m) m.textContent='⚠️ 检测到 service_role 密钥，浏览器会被 Supabase 拒绝，请复制 anon public 那行'; return; }
+      try{ localStorage.setItem('gfapp_sb_conf', JSON.stringify({url, key})); }catch(e){}
+      const s=$('#lcState'); if(s) s.textContent='已配置（建房/加入后自动同步）'; toast('中转服务已启用 💗');
+      if(typeof relay!=='undefined' && relay.room){ relay.ensure(); } };
+    $('#lcTest').onclick=()=>{ if(typeof relay!=='undefined') relay.test(); };
+    // 昵称：预填 + 保存后立即上报，让对方马上看到新名字
+    try{ const nv=localStorage.getItem('gfapp_nickname'); if(nv && $('#sbNick')) $('#sbNick').value=nv; }catch(e){}
+    if($('#nickSave')) $('#nickSave').onclick=()=>{ const n=($('#sbNick').value||'').trim();
+      if(!n){ toast('请输入昵称'); return; }
+      try{ localStorage.setItem('gfapp_nickname', n); }catch(e){}
+      toast('昵称已保存 💗'); if(typeof relay!=='undefined' && relay.room){ relay.presencePush(); relay.presencePull(); } };
+    $('#lcClear').onclick=()=>{ try{ localStorage.removeItem('gfapp_sb_conf'); }catch(e){} if(typeof relay!=='undefined'){ relay.stop(); } const s=$('#lcState'); if(s) s.textContent='未配置'; const m=$('#lcTestMsg'); if(m) m.textContent=''; toast('已停用中转服务'); };
+    if($('#refreshMembers')) $('#refreshMembers').onclick=()=>{ if(typeof relay!=='undefined' && relay.room){ relay.presencePush(); relay.presencePull(); toast('已刷新房间成员 💗'); } else { toast('请先建房/加入房间'); } };
+    if(typeof relay!=='undefined' && relay.hasConf()){ const s=$('#lcState'); if(s) s.textContent='已配置（建房/加入后生效）'; }
+    $('#syncFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+      r.onload=ev=>{ try{ const o=JSON.parse(ev.target.result); if(o&&o.data){ for(const k in o.data) localStorage.setItem(k,o.data[k]); refreshAll(); toast('已导入 💗'); } }catch(err){ toast('文件格式不对'); } e.target.value=''; };
+      r.readAsText(f); };
+  },
+  // ===== 连接入口：建立点对点（PeerJS）连接 =====
+  connect(room, role){
+    // 已配置中转服务时，同步完全由 relay 负责，绝不再启动 PeerJS（避免误触发 peer-unavailable 覆盖中转状态）
+    if(typeof relay!=='undefined' && relay.hasConf()){ return; }
+    this._room=room; this._role=role;
+    if(this._peerStarted) return; this._peerStarted=true;
+    this.ensureLib(()=>{ if(role==='server') this.peerCreate(room); else this.peerJoin(room); });
+  },
+  // 断开后自动重连（固定 3 秒，直到用户主动断开）。房间号已记忆，刷新/重开无需手动重连
+  _scheduleReconnect(room, role, reason){
+    if(this._closedByUser) return;
+    clearTimeout(this._reconnectTimer);
+    this.setStatus(reason || '连接已断开，3 秒后自动重连…');
+    this._reconnectTimer=setTimeout(()=>{ this._peerStarted=false; this.connect(room, role); }, 3000);
+  },
+  // PeerJS 默认 ICE（使用其内置 STUN），不依赖任何第三方打洞 / TURN 服务
+  _peerOpts(){ return { debug:1 }; },
+  create(){
+    this.ensureLib(()=>{
+      const id=this.genId(); this.role='server'; this._room=id; this._role='server';
+      this._closedByUser=false; this._persistConf(id,'server');
+      $('#syncId').textContent=id; this.renderQR(id);
+      refreshLocks();
+      if(typeof relay!=='undefined' && relay.hasConf()){ relay.setRoom(id,'server'); this.setStatus('已通过中转服务连接，实时同步中 💗'); }
+      else { this.setStatus('房间已就绪，让对方的手机加入 👇'); this.connect(id,'server'); }
+    });
+  },
+  join(room){
+    if(!room){ toast('请输入房间号'); return; }
+    this.role='client'; this._room=room; this._role='client';
+    this._closedByUser=false; this._persistConf(room,'client');
+    refreshLocks();
+    if(typeof relay!=='undefined' && relay.hasConf()){ relay.setRoom(room,'client'); this.setStatus('已通过中转服务连接，实时同步中 💗'); }
+    else { this.connect(room,'client'); }
+  },
+  // ===== 点对点（PeerJS）建连 =====
+  peerCreate(id){
+    if(!window.Peer){ this._scheduleReconnect(id,'server','同步组件未加载，正在重连…'); return; }
+    this.role='server'; this.setStatus('正在创建房间…'); refreshLocks();
+    try{ this.peer=new Peer(id, this._peerOpts()); }catch(e){ this._scheduleReconnect(id,'server','创建失败，正在重连…'); return; }
+    this.peer.on('open', ()=>{ this.setStatus('房间已就绪，让对方的手机加入 👇'); });
+    this.peer.on('connection', conn=>this.setupConn(conn));
+    this.peer.on('error', err=>{ this._scheduleReconnect(id,'server','连接异常：'+(err&&err.type||'未知')); });
+  },
+  peerJoin(room){
+    if(!window.Peer){ this._scheduleReconnect(room,'client','同步组件未加载，正在重连…'); return; }
+    this.role='client'; this.setStatus('正在连接…'); refreshLocks();
+    try{ this.peer=new Peer(undefined, this._peerOpts()); }catch(e){ this._scheduleReconnect(room,'client','连接失败，正在重连…'); return; }
+    this.peer.on('open', ()=>{ try{ const conn=this.peer.connect(room,{reliable:true}); this.setupConn(conn); }catch(e){ this._scheduleReconnect(room,'client','连接失败，正在重连…'); } });
+    this.peer.on('error', err=>{ this._scheduleReconnect(room,'client','连接异常：'+(err&&err.type||'未知')); });
+  },
+  setupConn(conn){
+    this.conn=conn;
+    conn.on('open', ()=>{ this.setStatus('已连接，实时同步中 💗'); conn.send(JSON.stringify({kind:'sync', data:snapshot()})); });
+    conn.on('data', d=>{ try{ const msg=JSON.parse(d);
+      if(msg && msg.kind==='sync'){ this._remote=true; mergeSnap(msg.data); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); }
+      else if(msg && msg.kind==='patch'){ this._remote=true; mergeSnap({data:msg.data, v:msg.v}); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); }
+      else if(msg && msg.kind==='sos' && typeof sos!=='undefined'){ sos.receive(msg.sos); }
+    }catch(e){ this.setStatus('同步失败：数据解析错误'); } });
+    conn.on('close', ()=>{ this.conn=null;
+      if(this._closedByUser) return;
+      if(this.role==='server'){ this.setStatus('对方断开，等待 TA 重新连接…'); }
+      else { this._scheduleReconnect(this._room, this._role, '连接已断开，将自动重连…'); }
+    });
+  },
+  // 实时增量推送：连接建立后，任一方改动都会通过 patch 即时同步给对方
+  patch(k, v){
+    if(this.conn && this.conn.open){ try{ this.conn.send(JSON.stringify({kind:'patch', data:{['gfapp_'+k]: JSON.stringify(v)}, v:{['gfapp_'+k]: Date.now()}})); }catch(e){} }
+  },
+  send(obj){
+    if(this.conn && this.conn.open){ try{ this.conn.send(JSON.stringify(obj)); }catch(e){} }
+  },
+  renderQR(text){
+    const box=$('#syncQR'); if(!box) return;
+    if(typeof qrcode==='undefined'){ box.textContent='房间号：'+text; return; }
+    try{ const qr=qrcode(0,'M'); qr.addData(text); qr.make(); box.innerHTML=qr.createImgTag(4); }catch(e){ box.textContent=text; }
+  },
+  renderShareQR(){
+    const box=$('#shareQR'); if(!box) return;
+    let url=location.href;
+    if(this._room){ // 已建/已加房间 → 直接带 ?room= 邀请链接，对方扫码即自动加入同房间
+      try{ const u=new URL(location.href); u.searchParams.set('room', this._room); url=u.toString(); }catch(e){}
+    }
+    if(typeof qrcode==='undefined'){ box.textContent=url; toast('二维码库加载中，请稍候重试'); return; }
+    try{ const qr=qrcode(0,'M'); qr.addData(url); qr.make(); box.innerHTML=qr.createImgTag(5); toast('二维码已生成，让 TA 扫码 💗'); }
+    catch(e){ box.textContent=url; }
+  },
+  exportData(){
+    const o=snapshot(); const blob=new Blob([JSON.stringify(o)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='我们的小软件数据.json'; a.click(); toast('已导出 💗');
+  }
+};
+sync.init();
+
+/* ================= 吵架和好按钮 ================= */
+const makeup = {
+  lines:['我错了，抱抱～','别生气了好不好嘛 🥺','你最漂亮了，我眼光最好','是我不好，罚我亲一下','咱们和好好不好','以后都听你的 💕','你生气的样子也好看'],
+  init(){ this.bind(); },
+  bind(){ $('#makeupBtn').onclick=()=>this.open(); $('#makeupOverlay').onclick=()=>this.close(); },
+  open(){
+    $('#makeupText').textContent=this.lines[Math.floor(Math.random()*this.lines.length)];
+    const ov=$('#makeupOverlay'); ov.classList.add('show');
+    for(let i=0;i<10;i++){ const h=document.createElement('div'); h.className='mk-heart';
+      h.textContent=['💗','💕','✨','🌸'][i%4];
+      h.style.left=(20+Math.random()*60)+'%'; h.style.top=(40+Math.random()*30)+'%';
+      h.style.animationDelay=(i*0.12)+'s'; ov.appendChild(h); setTimeout(()=>h.remove(),1700); }
+  },
+  close(){ $('#makeupOverlay').classList.remove('show'); }
+};
+makeup.init();
+</script>
+</body>
+</html>
