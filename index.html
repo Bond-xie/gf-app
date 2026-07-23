@@ -830,12 +830,15 @@ function setVfull(fullKey, ts){ const v=store.vmap(); v[fullKey]=ts; localStorag
 function mergeSnap(snap){
   if(!snap||!snap.data) return;
   const incV = snap.v||{}, myV = store.vmap(), data = snap.data;
+  // ① 先把墓碑（删除记录）合并进本地，再处理其它键。
+  //    这样后续所有 applyTomb 都基于“完整墓碑”，否则当快照里墓碑键排在数据键之后时，
+  //    对方的删除会被并集重新带回来（“删了又冒出来”）。
+  if(data[TOMB_KEY]){
+    try{ const mine=getTomb(); const theirs=JSON.parse(data[TOMB_KEY]||'[]'); const set=new Set(mine); theirs.forEach(x=>set.add(x)); localStorage.setItem(TOMB_KEY, JSON.stringify([...set])); bumpVfull(TOMB_KEY); }catch(e){}
+  }
   for(const k in data){
+    if(k===TOMB_KEY) continue;
     if(SYNC_SKIP.includes(k)) continue; // 积分等每台设备独立，跳过
-    if(k===TOMB_KEY){ // 墓碑本身：并集合并，确保各端删除都能传播
-      try{ const mine=getTomb(); const theirs=JSON.parse(data[k]||'[]'); const set=new Set(mine); theirs.forEach(x=>set.add(x)); localStorage.setItem(TOMB_KEY, JSON.stringify([...set])); bumpVfull(TOMB_KEY); }catch(e){}
-      continue;
-    }
     const tsIn = incV[k]||0, tsMy = myV[k]||0;
     let lv=null, iv=null;
     try{ lv=JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ lv=null; }
@@ -1523,7 +1526,16 @@ const sos = {
     if(!list.length){ box.innerHTML='<div class="log-empty">还没有时光胶囊 💌</div>'; return; }
     list.slice().sort((a,b)=>a.reveal<b.reveal?1:-1).forEach(c=>{ const revealed=c.reveal<=today; const div=document.createElement('div'); div.className='capsule-item'+(revealed?' capsule-revealed':'');
       div.innerHTML='<div class="capsule-meta">'+(revealed?'💌 已揭晓（'+c.reveal+'）':'⏳ '+c.reveal+' 揭晓')+'</div><div class="capsule-text">'+escapeHtml(c.text)+'</div>';
-      box.appendChild(div); }); }
+      box.appendChild(div); }); },
+  // 中转(Pull)路径下，对方发来的紧急不会走 receive()（只进了 localStorage），
+  // 这里在每次拉取后补触发提醒（声音/震动/横幅），与 P2P 路径体验一致。
+  _surface(){ try{
+    if(!this._alarmed) this._alarmed=new Set();
+    const list=store.get('sos',[]);
+    list.forEach(s=>{ if(s && s.from && s.from!==DEV && !this._alarmed.has(s.t)){
+      this._alarmed.add(s.t); this.alarm(); if(typeof home!=='undefined') home.render(); this.render(); toast('🆘 TA 需要你！');
+    } });
+  }catch(e){} }
 };
 
 /* ================= 今日任务 · AI 随机 ================= */
@@ -1541,13 +1553,17 @@ const task = {
     for(let i=0;i<Math.min(1,pool.length);i++){ const k=Math.floor(rng()*pool.length); idxs.push(pool.splice(k,1)[0]); }
     return idxs.map(i=>({i, text:all[i]}));
   },
-  isDone(i){ return this.done.includes(this.today+'#'+i); },
-  toggle(i){ const k=this.today+'#'+i; const j=this.done.indexOf(k);
+  _key(text){ return this.today+'#'+encodeURIComponent(text); },
+  isDone(text){ return this.done.includes(this._key(text)); },
+  toggle(text){ const k=this._key(text); const j=this.done.indexOf(k);
     if(j>=0) this.done.splice(j,1); else this.done.push(k);
     store.set('taskDone',this.done); this.render(); this.renderHome(); this.renderDone(); },
-  // 解析 "日期#索引" → {date, text}
-  parseDone(k){ const p=String(k).split('#'); const date=p[0]||''; const i=parseInt(p[1],10);
-    const all=this.combined(); const text=(!isNaN(i)&&all[i]!=null)?all[i]:'（已完成的小任务）'; return {date, text}; },
+  // 解析 "日期#任务文本(encodeURIComponent)" → {date, text}；兼容旧版"日期#索引"格式
+  parseDone(k){ const p=String(k).split('#'); const date=p[0]||''; const rest=p.slice(1).join('#');
+    const all=this.combined();
+    if(/^\d+$/.test(rest)){ const i=parseInt(rest,10); return {date, text:(all[i]!=null)?all[i]:'（已完成的小任务）'}; }
+    let text; try{ text=decodeURIComponent(rest); }catch(e){ text=rest; }
+    return {date, text: text||'（已完成的小任务）'}; },
   renderDone(){
     const box=$('#taskDoneList'); const cnt=$('#taskDoneCnt'); if(!box) return;
     const list=(this.done||[]).slice().sort((a,b)=>a<b?1:-1);
@@ -1571,19 +1587,19 @@ const task = {
   render(){
     const box=$('#taskList'); if(!box)return; box.innerHTML='';
     this.daily().forEach(t=>{
-      const d=document.createElement('div'); d.className='task-item'+(this.isDone(t.i)?' done':'');
-      d.innerHTML='<div class="task-check'+(this.isDone(t.i)?' on':'')+'">✓</div><div class="task-txt">'+escapeHtml(t.text)+'</div>';
-      d.querySelector('.task-check').onclick=()=>this.toggle(t.i);
+      const d=document.createElement('div'); d.className='task-item'+(this.isDone(t.text)?' done':'');
+      d.innerHTML='<div class="task-check'+(this.isDone(t.text)?' on':'')+'">✓</div><div class="task-txt">'+escapeHtml(t.text)+'</div>';
+      d.querySelector('.task-check').onclick=()=>this.toggle(t.text);
       box.appendChild(d);
     });
   },
   renderHome(){
     const box=$('#homeTaskList'); if(!box)return; box.innerHTML='';
     const list=this.daily(); let n=0;
-    list.forEach(t=>{ if(this.isDone(t.i)) n++;
-      const d=document.createElement('div'); d.className='task-item'+(this.isDone(t.i)?' done':'');
-      d.innerHTML='<div class="task-check'+(this.isDone(t.i)?' on':'')+'">✓</div><div class="task-txt">'+escapeHtml(t.text)+'<span class="task-prog">'+(this.isDone(t.i)?'已完成':'待完成')+'</span></div>';
-      d.querySelector('.task-check').onclick=()=>this.toggle(t.i);
+    list.forEach(t=>{ if(this.isDone(t.text)) n++;
+      const d=document.createElement('div'); d.className='task-item'+(this.isDone(t.text)?' done':'');
+      d.innerHTML='<div class="task-check'+(this.isDone(t.text)?' on':'')+'">✓</div><div class="task-txt">'+escapeHtml(t.text)+'<span class="task-prog">'+(this.isDone(t.text)?'已完成':'待完成')+'</span></div>';
+      d.querySelector('.task-check').onclick=()=>this.toggle(t.text);
       box.appendChild(d);
     });
     const prog=document.createElement('div'); prog.style.cssText='font-size:12px;color:#ff9bb3;margin-top:6px;text-align:center;';
@@ -1818,14 +1834,20 @@ const relay = {
         if(rows&&rows[0]&&rows[0].data){ const s=JSON.parse(rows[0].data); shared={data:s.data||{}, v:s.v||{}}; }
       }catch(e){}
       const local=snapshot(); // {data, v}
-      const mergedData={}, mergedV={};
+      // ① 先把墓碑（删除记录）合并进本地并落地，使下面的 applyTomb 基于“完整墓碑”，
+      //    避免对方删掉的数据被并集重新带回来。
+      let mergedTomb=[];
+      try{
+        const mine = local.data[TOMB_KEY]?JSON.parse(local.data[TOMB_KEY]||'[]'):[];
+        const theirs = shared.data[TOMB_KEY]?JSON.parse(shared.data[TOMB_KEY]||'[]'):[];
+        const set=new Set(mine); theirs.forEach(x=>set.add(x)); mergedTomb=[...set];
+        localStorage.setItem(TOMB_KEY, JSON.stringify(mergedTomb)); bumpVfull(TOMB_KEY);
+      }catch(e){}
+      const mergedData={ [TOMB_KEY]: JSON.stringify(mergedTomb) }, mergedV={ [TOMB_KEY]: Math.max(local.v[TOMB_KEY]||0, shared.v[TOMB_KEY]||0) };
       const keys=new Set([...Object.keys(shared.data), ...Object.keys(local.data)]);
       for(const k of keys){
+        if(k===TOMB_KEY) continue;
         if(SYNC_SKIP.includes(k)) continue;
-        if(k===TOMB_KEY){ // 墓碑：并集合并
-          try{ const mine=local.data[k]?JSON.parse(local.data[k]||'[]'):[]; const theirs=shared.data[k]?JSON.parse(shared.data[k]||'[]'):[]; const set=new Set(mine); theirs.forEach(x=>set.add(x)); mergedData[k]=JSON.stringify([...set]); mergedV[k]=Math.max(local.v[k]||0, shared.v[k]||0); }catch(e){}
-          continue;
-        }
         const lt=local.v[k]||0, st=shared.v[k]||0;
         // 集合（数组/对象）：并集合并（含墓碑过滤），确保两端数据都出现、删除也传播
         try{
@@ -1857,7 +1879,7 @@ const relay = {
       const rows=await r.json();
       if(rows&&rows[0]&&rows[0].data && rows[0].data!==this._last){
         this._last=rows[0].data;
-        try{ const snap=JSON.parse(rows[0].data); mergeSnap(snap); if(typeof refreshAll==='function') refreshAll(); this.setStatus('【中转】已实时同步 💗'); }catch(e){}
+        try{ const snap=JSON.parse(rows[0].data); mergeSnap(snap); if(typeof refreshAll==='function') refreshAll(); if(typeof sos!=='undefined') sos._surface(); this.setStatus('【中转】已实时同步 💗'); }catch(e){}
       }
     }catch(e){ this.setStatus('中转拉取失败：'+(e&&e.message||e)); }
   },
@@ -2074,8 +2096,8 @@ const sync = {
     this.conn=conn;
     conn.on('open', ()=>{ this.setStatus('已连接，实时同步中 💗'); conn.send(JSON.stringify({kind:'sync', data:snapshot()})); });
     conn.on('data', d=>{ try{ const msg=JSON.parse(d);
-      if(msg && msg.kind==='sync'){ this._remote=true; mergeSnap(msg.data); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); }
-      else if(msg && msg.kind==='patch'){ this._remote=true; mergeSnap({data:msg.data, v:msg.v}); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); }
+      if(msg && msg.kind==='sync'){ this._remote=true; mergeSnap(msg.data); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); if(typeof sos!=='undefined') sos._surface(); }
+      else if(msg && msg.kind==='patch'){ this._remote=true; mergeSnap({data:msg.data, v:msg.v}); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); if(typeof sos!=='undefined') sos._surface(); }
       else if(msg && msg.kind==='sos' && typeof sos!=='undefined'){ sos.receive(msg.sos); }
     }catch(e){ this.setStatus('同步失败：数据解析错误'); } });
     conn.on('close', ()=>{ this.conn=null;
