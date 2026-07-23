@@ -338,6 +338,16 @@
   .badge .b-desc{font-size:11px;color:var(--text-soft);margin-top:2px;}
   .badge.on{background:linear-gradient(160deg,#fff0f6,#ffd9e8);box-shadow:0 4px 12px rgba(231,84,128,.18);}
   .badge.locked{filter:grayscale(.9);opacity:.55;}
+  /* 同步角色徽标 */
+  .role-badge{font-size:12px;color:#e84c88;margin-top:8px;text-align:center;}
+  .role-badge.host{color:#1ea672;font-weight:700;}
+  .sel{border:1.5px solid var(--pink-soft);border-radius:10px;padding:6px 8px;font-size:13px;color:var(--pink-deep);background:#fff;}
+  .gift-filter{display:flex;gap:8px;margin:10px 0 4px;}
+  .gift-filter button{border:1.5px solid var(--pink-soft);background:#fff;color:var(--pink-deep);border-radius:12px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;}
+  .gift-filter button.on{background:var(--pink-deep);color:#fff;border-color:var(--pink-deep);}
+  .gift-item .cat{font-size:11px;border-radius:8px;padding:1px 7px;margin-right:6px;background:#ffe3ec;color:#e84c88;}
+  .gift-item .cat.give{background:#e3f0ff;color:#3a7bd5;}
+  .gift-item .meta{font-size:12px;color:#e84c88;margin-left:auto;}
 </style>
 </head>
 <body>
@@ -377,6 +387,10 @@
       <div class="hc-label">💖 今日夸夸</div>
       <div class="hc-line" id="homePraiseTxt"></div>
     </div>
+    <div class="home-card" id="homeQuote" style="display:none;">
+      <div class="hc-label">💝 今日专属语</div>
+      <div class="hc-line" id="homeQuoteTxt"></div>
+    </div>
 
     <div class="home-card" id="homeCountdown">
       <div class="hc-label">💞 我们的纪念日</div>
@@ -407,6 +421,7 @@
       <div class="mood-acts">
         <button class="btn ghost small" id="moodEdit">写一句</button>
         <button class="btn ghost small" id="moodSave" style="display:none">保存</button>
+        <button class="btn ghost small" id="moodSetHome">💝 设为首页语</button>
       </div>
     </div>
 
@@ -444,6 +459,7 @@
         <button class="btn ghost" id="addPrize">添加</button>
       </div>
       <div class="chip-list" id="prizeList"></div>
+      <div class="role-badge" id="wheelRole"></div>
     </div>
     <details class="log-box" id="wheelLogBox">
       <summary>📜 转出记录 <span class="cnt" id="wheelLogCnt">0</span></summary>
@@ -531,10 +547,25 @@
   <section class="card" id="card-gift">
     <h2><span class="ic">🎁</span>礼物灵感库</h2>
     <div class="editor">
-      <div class="row"><input id="giftInput" placeholder="想送/想收的礼物，如：小熊玩偶" /><button class="btn ghost" id="addGift">添加</button></div>
+      <div class="row">
+        <select id="giftCat" class="sel">
+          <option value="want">想要的</option>
+          <option value="give">送出的</option>
+        </select>
+        <input id="giftInput" placeholder="礼物名，如：小熊玩偶" style="flex:2;" />
+      </div>
+      <div class="row">
+        <input id="giftPrice" placeholder="价位备注，如：¥199" style="flex:2;" />
+        <button class="btn ghost" id="addGift">添加</button>
+      </div>
+    </div>
+    <div class="gift-filter" id="giftFilter">
+      <button data-f="all" class="on">全部</button>
+      <button data-f="want">想要的</button>
+      <button data-f="give">送出的</button>
     </div>
     <div class="gift-list" id="giftList"></div>
-    <div class="cal-note">节日到了翻一翻，不抓瞎 🎁</div>
+    <div class="cal-note">点礼物名左侧 ✅ 标记已买；节日抽奖只从「想要的」且未买里抽 🎁</div>
   </section>
 
   <!-- 特殊节日 · 礼物抽奖 -->
@@ -666,9 +697,11 @@
     <div class="praise-box">
       <button class="btn block" id="praiseBtn">夸夸她 💖</button>
       <div class="praise-result" id="praiseResult">点一下，收获一句甜</div>
+      <button class="btn ghost small" id="setHomeQuote" style="margin-top:8px;">💝 设为今日首页语</button>
     </div>
     <div class="editor">
       <div class="row"><input id="praiseInput" placeholder="想加一句专属夸夸" /><button class="btn ghost" id="addPraise">添加</button></div>
+      <div class="role-badge" id="praiseRole"></div>
     </div>
   </section>
 
@@ -677,6 +710,25 @@
     <h2><span class="ic">🆘</span>紧急按钮</h2>
     <div class="cal-note">遇到困难按一下，TA 会立刻收到「我需要你」+ 你的位置 💗</div>
     <button class="sos-btn" id="sosBtn">🆘 我需要你</button>
+    <div class="row" style="margin-top:10px;align-items:center;">
+      <span style="font-size:13px;color:#ff5a7a;font-weight:700;">共享实时位置</span>
+      <select id="sosLiveMin" class="sel">
+        <option value="0">不共享</option>
+        <option value="5">5 分钟</option>
+        <option value="10" selected>10 分钟</option>
+        <option value="30">30 分钟</option>
+      </select>
+    </div>
+    <div class="cal-note" style="margin-top:12px;">常用位置：保存后一键发送，不用每次重新定位 📍</div>
+    <div class="editor">
+      <div class="row">
+        <input id="placeName" placeholder="位置名，如：公司 / 家" style="flex:2;" />
+        <button class="btn ghost small" id="placeUseLoc">用当前位置</button>
+        <button class="btn ghost small" id="placeSave">保存</button>
+      </div>
+      <div id="placeHint" style="font-size:12px;color:#e84c88;margin-top:4px;"></div>
+    </div>
+    <div class="gift-list" id="placeList"></div>
     <div class="editor" style="margin-top:12px;">
       <textarea id="sosCapsule" class="mood-input" placeholder="想趁现在对 TA 说的一句话（随定位一起送出）"></textarea>
     </div>
@@ -715,6 +767,7 @@
   <div class="sos-card">
     <div class="big">已通知 TA 💗</div>
     <div class="msg" id="sosMsg"></div>
+    <div id="sosLive" style="display:none;margin-top:10px;font-size:13px;color:#ff5a7a;"></div>
     <button class="btn block" id="sosCopy">复制给微信</button>
     <button class="btn ghost small" id="sosClose">关闭</button>
   </div>
@@ -827,14 +880,18 @@ function readJson(k, d){ try{ const v=JSON.parse(localStorage.getItem(k)); retur
 function unionArr(a, b){ const seen=new Set(a.map(x=>JSON.stringify(x))); const out=a.slice();
   b.forEach(x=>{ const s=JSON.stringify(x); if(!seen.has(s)) out.push(x); }); return out; }
 function setVfull(fullKey, ts){ const v=store.vmap(); v[fullKey]=ts; localStorage.setItem('gfapp_sync_v', JSON.stringify(v)); }
+// 返回 true 表示本次合并确实改写了本地数据；false 表示没有任何变化（用于“数据变了才刷新”）
 function mergeSnap(snap){
-  if(!snap||!snap.data) return;
+  if(!snap||!snap.data) return false;
   const incV = snap.v||{}, myV = store.vmap(), data = snap.data;
+  let changed=false;
   // ① 先把墓碑（删除记录）合并进本地，再处理其它键。
   //    这样后续所有 applyTomb 都基于“完整墓碑”，否则当快照里墓碑键排在数据键之后时，
   //    对方的删除会被并集重新带回来（“删了又冒出来”）。
   if(data[TOMB_KEY]){
-    try{ const mine=getTomb(); const theirs=JSON.parse(data[TOMB_KEY]||'[]'); const set=new Set(mine); theirs.forEach(x=>set.add(x)); localStorage.setItem(TOMB_KEY, JSON.stringify([...set])); bumpVfull(TOMB_KEY); }catch(e){}
+    try{ const mine=getTomb(); const theirs=JSON.parse(data[TOMB_KEY]||'[]'); const set=new Set(mine); let added=0;
+      theirs.forEach(x=>{ if(!set.has(x)){ set.add(x); added++; } });
+      if(added>0){ localStorage.setItem(TOMB_KEY, JSON.stringify([...set])); bumpVfull(TOMB_KEY); changed=true; } }catch(e){}
   }
   for(const k in data){
     if(k===TOMB_KEY) continue;
@@ -846,12 +903,15 @@ function mergeSnap(snap){
     // 集合（数组/对象）：无论时间戳如何，都做并集合并，保证两端数据都出现
     if(lv && iv && ((Array.isArray(lv)&&Array.isArray(iv)) || (lv&&typeof lv==='object'&&iv&&typeof iv==='object'))){
       let merged = mergeValues(lv, iv); merged = applyTomb(k, merged);
-      localStorage.setItem(k, JSON.stringify(merged)); bumpVfull(k); continue;
+      const newS = JSON.stringify(merged);
+      if(newS !== (localStorage.getItem(k)||'null')){ localStorage.setItem(k, newS); bumpVfull(k); changed=true; }
+      continue;
     }
     // 标量/单值：最后写入者胜（时间戳新者优先，相同则取传入值，保证两端收敛）
     const win = (tsIn > tsMy) || (tsIn===tsMy && data[k] > (localStorage.getItem(k)||''));
-    if(win){ localStorage.setItem(k, data[k]); bumpVfull(k); }
+    if(win && data[k] !== localStorage.getItem(k)){ localStorage.setItem(k, data[k]); bumpVfull(k); changed=true; }
   }
+  return changed;
 }
 function refreshAll(){
   try{
@@ -930,7 +990,10 @@ const wheel = {
   isUsedToday(){ return store.get('wheel_date','') === this.todayStr(); },
   setUsedToday(){ store.set('wheel_date', this.todayStr()); },
   canSpin(){ return true; }, // 服务端/客户端都能抽奖；每日限一次由 wheel_date 控制（已加入 SYNC_SKIP，按设备独立）
-  canEdit(){ return !syncRef || syncRef.role!=='client'; },
+  canEdit(){
+    try{ if(typeof relay!=='undefined' && relay.hasConf() && relay.room) return relay.amHost(); }catch(e){}
+    return !syncRef || syncRef.role!=='client';
+  },
   refreshLock(){
     const used=this.isUsedToday();
     const btn=$('#spinBtn');
@@ -945,6 +1008,9 @@ const wheel = {
     const addBtn=$('#addPrize'), input=$('#prizeInput');
     if(!this.canEdit()){ if(addBtn){ addBtn.classList.add('locked'); addBtn.disabled=true; } if(input){ input.disabled=true; input.placeholder='🔒 只有服务端能添加奖品'; } }
     else { if(addBtn){ addBtn.classList.remove('locked'); addBtn.disabled=false; } if(input){ input.disabled=false; input.placeholder='输入一个奖品，如：免家务一次'; } }
+    // 同步角色徽标（中转模式下显示主机/客户端，明确奖品池由谁维护）
+    const rb=$('#wheelRole');
+    if(rb){ if(typeof relay!=='undefined' && relay.hasConf() && relay.room){ if(relay.amHost()){ rb.textContent='🏠 你是主机，奖品池由你维护'; rb.classList.add('host'); } else { rb.textContent='📱 你是客户端，奖品池由主机维护'; rb.classList.remove('host'); } } else { rb.textContent=''; rb.classList.remove('host'); } }
   },
   draw(){
     const ctx=this.ctx, n=this.prizes.length, r=150, cx=150, cy=150;
@@ -1469,12 +1535,18 @@ const praise = {
   custom: store.get('praiseCustom', []),
   init(){ this.bind(); this.refreshLock(); },
   bind(){ $('#praiseBtn').onclick=()=>{ const list=this.custom.concat(PRAISE_DEF); $('#praiseResult').textContent=list[Math.floor(Math.random()*list.length)]; };
-    $('#addPraise').onclick=()=>{ if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能添加夸夸 🔒'); return; } const v=$('#praiseInput').value.trim(); if(!v)return; this.custom.push(v); store.set('praiseCustom',this.custom); $('#praiseInput').value=''; toast('已收藏这句夸夸 💖'); }; },
-  canEdit(){ return !syncRef || syncRef.role!=='client'; },
+    $('#addPraise').onclick=()=>{ if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能添加夸夸 🔒'); return; } const v=$('#praiseInput').value.trim(); if(!v)return; this.custom.push(v); store.set('praiseCustom',this.custom); $('#praiseInput').value=''; toast('已收藏这句夸夸 💖'); };
+    $('#setHomeQuote').onclick=()=>{ const t=($('#praiseResult').textContent||'').trim(); if(!t || t==='点一下，收获一句甜'){ toast('先夸一句再设为首页语哦'); return; } if(typeof home!=='undefined') home.setQuote(t); }; },
+  canEdit(){
+    try{ if(typeof relay!=='undefined' && relay.hasConf() && relay.room) return relay.amHost(); }catch(e){}
+    return !syncRef || syncRef.role!=='client';
+  },
   refreshLock(){
     const addBtn=$('#addPraise'), input=$('#praiseInput');
     if(!this.canEdit()){ if(addBtn){ addBtn.classList.add('locked'); addBtn.disabled=true; } if(input){ input.disabled=true; input.placeholder='🔒 只有服务端能添加夸夸'; } }
     else { if(addBtn){ addBtn.classList.remove('locked'); addBtn.disabled=false; } if(input){ input.disabled=false; input.placeholder='想加一句专属夸夸'; } }
+    const rb=$('#praiseRole');
+    if(rb){ if(typeof relay!=='undefined' && relay.hasConf() && relay.room){ if(relay.amHost()){ rb.textContent='🏠 你是主机，夸夸库由你维护'; rb.classList.add('host'); } else { rb.textContent='📱 你是客户端，夸夸库由主机维护'; rb.classList.remove('host'); } } else { rb.textContent=''; rb.classList.remove('host'); } }
   },
   render(){},
   daily(){ const list=this.custom.concat(PRAISE_DEF); return list[hashStr(ymd(new Date()))%list.length]; }
@@ -1483,7 +1555,9 @@ const praise = {
 /* ================= 紧急按钮（定位 + 时光胶囊） ================= */
 const DEV = (function(){ let d=localStorage.getItem('couple_devid'); if(!d){ d=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('couple_devid', d); } return d; })();
 const sos = {
-  init(){ this.bind(); this.render(); },
+  places: store.get('sosPlaces', []),
+  _tmpLoc:null,
+  init(){ this.bind(); this.render(); this.renderPlaces(); },
   bind(){
     $('#sosBtn').onclick=()=>this.trigger();
     $('#sosClose').onclick=()=>$('#sosOverlay').classList.remove('show');
@@ -1491,6 +1565,8 @@ const sos = {
     $('#addCapsule').onclick=()=>{ const text=$('#capsuleText').value.trim(); const reveal=$('#capsuleDate').value; if(!text||!reveal){ toast('写点话并选个揭晓日期 💌'); return; }
       const list=store.get('capsules',[]); list.push({text,reveal}); store.set('capsules',list); $('#capsuleText').value=''; $('#capsuleDate').value=''; this.render(); toast('胶囊已封存 💌'); };
     $('#sosAck').onclick=()=>{ const all=store.get('sos',[]); const removed=all.filter(s=>s.from!==DEV); const list=all.filter(s=>s.from===DEV); store.set('sos',list); removed.forEach(s=>markDeleted('gfapp_sos', s.t)); this.render(); if(typeof home!=='undefined') home.render(); if(typeof sync!=='undefined') sync.send({kind:'ack'}); toast('已联系 💗'); };
+    $('#placeUseLoc').onclick=()=>{ if(!navigator.geolocation){ toast('此设备不支持定位'); return; } $('#placeHint').textContent='定位中…'; navigator.geolocation.getCurrentPosition(p=>{ const lat=p.coords.latitude, lon=p.coords.longitude; this._tmpLoc={lat,lon}; fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+lat+'&longitude='+lon+'&localityLanguage=zh').then(r=>r.json()).then(g=>{ const addr=((g.principalSubdivision||'')+' '+(g.city||g.locality||'')).trim(); this._tmpLoc.addr=addr||(lat+','+lon); $('#placeHint').textContent='已获取：'+this._tmpLoc.addr; }).catch(()=>{ this._tmpLoc.addr=lat+','+lon; $('#placeHint').textContent='已获取坐标：'+lat+','+lon; }); }, ()=>{ toast('定位失败'); $('#placeHint').textContent=''; }, {timeout:9000}); };
+    $('#placeSave').onclick=()=>{ const name=($('#placeName').value||'').trim(); if(!name){ toast('给位置起个名字'); return; } if(!this._tmpLoc){ toast('先点「用当前位置」获取坐标'); return; } this.places.push({name, addr:this._tmpLoc.addr, lat:this._tmpLoc.lat, lon:this._tmpLoc.lon}); store.set('sosPlaces',this.places); $('#placeName').value=''; $('#placeHint').textContent=''; this._tmpLoc=null; this.renderPlaces(); toast('已保存常用位置 📍'); };
   },
   alarm(){
     try{
@@ -1503,12 +1579,21 @@ const sos = {
     }catch(e){}
     if(navigator.vibrate) try{ navigator.vibrate([400,150,400,150,400,150,400]); }catch(e){}
   },
-  trigger(){ $('#sosBtn').textContent='定位中…';
-    const done=(lat,lon)=>{ const capsule=$('#sosCapsule').value.trim();
+  trigger(place){
+    const self=this;
+    const startLive=(s)=>{ const min=parseInt(($('#sosLiveMin')&&$('#sosLiveMin').value)||'0',10)||0; if(min>0) self.shareLive(s, min); };
+    if(place && place.lat!=null){ // 常用位置：直接用，免重新定位
+      const s={t:Date.now(), lat:place.lat, lon:place.lon, loc:place.addr||(place.lat+','+place.lon), capsule:($('#sosCapsule').value||'').trim(), from:DEV};
+      const list=store.get('sos',[]); list.push(s); store.set('sos',list);
+      if(typeof sync!=='undefined' && sync.conn && sync.conn.open) sync.send({kind:'sos', sos:s});
+      this.confirm(s); this.render(); if(typeof home!=='undefined') home.render(); startLive(s); return;
+    }
+    $('#sosBtn').textContent='定位中…';
+    const done=(lat,lon)=>{ $('#sosBtn').textContent='🆘 我需要你'; const capsule=($('#sosCapsule').value||'').trim();
       const build=(addr)=>{ const s={t:Date.now(), lat, lon, loc:addr, capsule, from:DEV};
         const list=store.get('sos',[]); list.push(s); store.set('sos',list);
         if(typeof sync!=='undefined' && sync.conn && sync.conn.open) sync.send({kind:'sos', sos:s});
-        $('#sosBtn').textContent='🆘 我需要你'; this.confirm(s); this.render(); if(typeof home!=='undefined') home.render(); };
+        this.confirm(s); this.render(); if(typeof home!=='undefined') home.render(); startLive(s); };
       if(lat!=null){ fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+lat+'&longitude='+lon+'&localityLanguage=zh').then(r=>r.json()).then(g=>{ const addr=(g.principalSubdivision||'')+' '+(g.city||g.locality||''); build(addr.trim()||(lat+','+lon)); }).catch(()=>build(lat+','+lon)); }
       else build('定位未获取'); };
     if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>done(p.coords.latitude,p.coords.longitude), ()=>done(null,null), {timeout:9000});
@@ -1535,7 +1620,40 @@ const sos = {
     list.forEach(s=>{ if(s && s.from && s.from!==DEV && !this._alarmed.has(s.t)){
       this._alarmed.add(s.t); this.alarm(); if(typeof home!=='undefined') home.render(); this.render(); toast('🆘 TA 需要你！');
     } });
-  }catch(e){} }
+  }catch(e){} },
+  quickSend(place){ this.trigger(place); },
+  // 实时位置共享：在指定分钟数内，用 watchPosition 持续更新坐标并通过同步通道广播给 TA。
+  // 为避免同步数组去重把“同一条 SOS 的不同坐标”当成两条，实时坐标走单独的 gfapp_sos_live（单对象，键级覆盖）。
+  shareLive(s, minutes){
+    const dur=minutes*60*1000; if(!dur || !navigator.geolocation) return;
+    this.stopLive();
+    const until=Date.now()+dur;
+    const write=(lat,lon)=>{ try{ store.set('sos_live', {t:s.t, lat, lon, until, from:DEV}); }catch(e){} };
+    write(s.lat!=null?s.lat:0, s.lon!=null?s.lon:0);
+    this._liveFor=s.t; this._liveEnd=until;
+    try{ this._watch=navigator.geolocation.watchPosition(p=>{ write(p.coords.latitude, p.coords.longitude); this.render(); if(typeof home!=='undefined') home.render(); }, ()=>{}, {enableHighAccuracy:true, timeout:9000}); }catch(e){}
+    this._liveTimer=setInterval(()=>{ if(Date.now()>=this._liveEnd) this.stopLive(); else this.renderLive(); }, 1000);
+    this.renderLive();
+  },
+  stopLive(){ if(this._watch){ try{ navigator.geolocation.clearWatch(this._watch); }catch(e){} this._watch=null; }
+    if(this._liveTimer){ clearInterval(this._liveTimer); this._liveTimer=null; }
+    this._liveFor=null; this._liveEnd=0;
+    try{ store.set('sos_live', {until:Date.now()-1, from:DEV, ended:true}); }catch(e){} // 广播“已结束”，对方到时也会自动隐藏
+    const el=$('#sosLive'); if(el) el.style.display='none';
+  },
+  renderLive(){ const el=$('#sosLive'); if(!el) return; if(!this._liveEnd){ el.style.display='none'; return; }
+    const left=Math.max(0, this._liveEnd-Date.now()); const m=Math.floor(left/60000), sec=Math.floor((left%60000)/1000);
+    el.style.display=''; el.innerHTML='🔴 实时位置共享中：'+m+' 分 '+sec+' 秒 <button class="btn ghost small" id="sosLiveStop">结束</button>';
+    const b=$('#sosLiveStop'); if(b) b.onclick=()=>this.stopLive();
+  },
+  // 返回对方正在共享的实时位置（已过期/自己发的忽略）
+  livePartner(){ try{ const o=store.get('sos_live',null); if(o && o.from && o.from!==DEV && o.until && o.until>Date.now() && o.lat!=null) return o; }catch(e){} return null; },
+  renderPlaces(){ const box=$('#placeList'); if(!box) return; box.innerHTML='';
+    if(!this.places.length){ box.innerHTML='<div class="cal-note">还没有常用位置</div>'; return; }
+    this.places.forEach((p)=>{ const el=document.createElement('div'); el.className='gift-item';
+      el.innerHTML='<span class="txt">📍 '+escapeHtml(p.name)+' · '+(p.addr?escapeHtml(p.addr):(p.lat+','+p.lon))+'</span><button class="del">发送</button>';
+      el.querySelector('.del').onclick=()=>this.quickSend(p);
+      box.appendChild(el); }); }
 };
 
 /* ================= 今日任务 · AI 随机 ================= */
@@ -1611,6 +1729,9 @@ const task = {
 
 const home = {
   init(){ this.bind(); this.render(); },
+  todayKey(){ return ymd(new Date()); },
+  // 一键把夸夸/情话设为今日首页语（按日期保存，第二天自动隐藏）
+  setQuote(text){ if(!text) return; store.set('homeQuote', {date:this.todayKey(), text}); this.render(); toast('已设为今日首页语 💝'); },
   bind(){
     $('#homeGrid').querySelectorAll('button').forEach(b=>{
       b.onclick=()=>{ const c=b.dataset.go;
@@ -1627,6 +1748,9 @@ const home = {
     // 问候
     const name=store.get('herName','宝贝');
     $('#homeGreet').textContent=name+'，今天也要开开心心呀～';
+    // 今日专属首页语（夸夸/情话一键设定）
+    const q=store.get('homeQuote',null); const qc=$('#homeQuote');
+    if(qc){ if(q && q.date===this.todayKey()){ qc.style.display=''; const qt=$('#homeQuoteTxt'); if(qt) qt.textContent=q.text; } else qc.style.display='none'; }
     // 纪念日列表（支持多个）
     const annivs=store.get('anniversaries',[]);
     const al=$('#homeAnnivList'); al.innerHTML='';
@@ -1658,9 +1782,15 @@ const home = {
     if(typeof praise!=='undefined'){ const pt=$('#homePraiseTxt'); if(pt) pt.textContent=praise.daily(); }
     if(typeof task!=='undefined') task.renderHome();
     if(typeof sos!=='undefined'){
-      const list=store.get('sos',[]).filter(s=>s.from&&s.from!==DEV);
       const banner=$('#homeSos');
-      if(banner){ if(list.length){ const s=list[list.length-1]; const time=new Date(s.t).toLocaleString('zh-CN'); banner.style.display=''; $('#homeSosTxt').innerHTML='🆘 TA 需要你<br><span style="font-size:13px;font-weight:400;">'+(s.loc?escapeHtml(s.loc)+' · ':'')+time+'</span>'; } else { banner.style.display='none'; } }
+      if(banner){
+        const live=sos.livePartner();
+        if(live){ const left=Math.max(0,live.until-Date.now()); banner.style.display='';
+          $('#homeSosTxt').innerHTML='📍 TA 实时位置<br><span style="font-size:13px;font-weight:400;">'+live.lat.toFixed(4)+','+live.lon.toFixed(4)+' · 剩 '+Math.ceil(left/60000)+' 分</span>'; }
+        else { const list=store.get('sos',[]).filter(s=>s.from&&s.from!==DEV);
+          if(list.length){ const s=list[list.length-1]; const time=new Date(s.t).toLocaleString('zh-CN'); banner.style.display=''; $('#homeSosTxt').innerHTML='🆘 TA 需要你<br><span style="font-size:13px;font-weight:400;">'+(s.loc?escapeHtml(s.loc)+' · ':'')+time+'</span>'; }
+          else { banner.style.display='none'; } }
+      }
     }
   }
 };
@@ -1686,6 +1816,7 @@ const mood = {
       store.set('moods',this.data); this.render();
       $('#moodInput').style.display='none'; $('#moodEdit').style.display='inline-block'; $('#moodSave').style.display='none';
     };
+    $('#moodSetHome').onclick=()=>{ const t=($('#moodText').textContent||'').trim(); if(!t){ toast('先有一句情话再设为首页语哦'); return; } if(typeof home!=='undefined') home.setQuote(t); };
   },
   render(){
     const t=this.data[this.todayKey()];
@@ -1737,34 +1868,44 @@ period.init();
 /* ================= 礼物灵感库 ================= */
 const gift = {
   list: store.get('gifts', []),
-  init(){ this.bind(); this.render(); },
+  filter:'all',
+  init(){ this.normalize(); this.bind(); this.render(); },
+  // 兼容旧数据 {t,done} → {t,cat:'want',price:'',bought}
+  normalize(){ let changed=false;
+    this.list=this.list.map(g=>{ if(g && g.t!=null && g.cat===undefined){ changed=true; return {t:g.t, cat:'want', price:'', bought:!!g.done}; } return g; });
+    if(changed) store.set('gifts', this.list);
+  },
   bind(){ $('#addGift').onclick=()=>{ const v=$('#giftInput').value.trim(); if(!v)return;
-    this.list.push({t:v,done:false}); store.set('gifts',this.list); $('#giftInput').value=''; this.render(); };
+    const cat=$('#giftCat')?$('#giftCat').value:'want'; const price=($('#giftPrice')&&$('#giftPrice').value||'').trim();
+    this.list.push({t:v, cat, price, bought:false}); store.set('gifts',this.list); $('#giftInput').value=''; if($('#giftPrice')) $('#giftPrice').value=''; this.render(); };
     $('#giftRaffleBtn').onclick=()=>this.raffle();
     $('#giftRaffleClose').onclick=()=>$('#giftRaffleOverlay').classList.remove('show');
     $('#giftRaffleAgain').onclick=()=>this.raffle();
     $('#giftRaffleOverlay').onclick=e=>{ if(e.target.id==='giftRaffleOverlay') e.currentTarget.classList.remove('show'); };
+    const f=$('#giftFilter'); if(f){ f.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ this.filter=b.dataset.f; f.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); this.render(); }; }); }
   },
   render(){
-    const box=$('#giftList'); box.innerHTML='';
+    const box=$('#giftList'); if(!box) return; box.innerHTML='';
+    const items=this.list.filter(g=> this.filter==='all' ? true : g.cat===this.filter);
     if(this.list.length===0){ box.innerHTML='<div class="cal-note">还没有灵感，加一条吧～</div>'; return; }
-    this.list.forEach((g,i)=>{
-      const el=document.createElement('div'); el.className='gift-item'+(g.done?' done':'');
-      el.innerHTML='<span class="ck">'+(g.done?'✅':'⬜️')+'</span><span class="txt">'+escapeHtml(g.t)+'</span><button class="del">✕</button>';
-      el.querySelector('.ck').onclick=()=>{ this.list[i].done=!this.list[i].done; store.set('gifts',this.list); this.render(); };
+    if(items.length===0){ box.innerHTML='<div class="cal-note">这类还没有礼物哦～</div>'; return; }
+    items.forEach((g)=>{ const i=this.list.indexOf(g);
+      const el=document.createElement('div'); el.className='gift-item'+(g.bought?' done':'');
+      const cat=g.cat==='give'?'送出的':'想要的';
+      el.innerHTML='<span class="ck">'+(g.bought?'✅':'⬜️')+'</span><span class="cat'+(g.cat==='give'?' give':'')+'">'+cat+'</span><span class="txt">'+escapeHtml(g.t)+'</span><span class="meta">'+(g.price?('💰'+escapeHtml(g.price)):'')+'</span><button class="del">✕</button>';
+      el.querySelector('.ck').onclick=()=>{ this.list[i].bought=!this.list[i].bought; store.set('gifts',this.list); this.render(); };
       el.querySelector('.del').onclick=()=>{ this.list.splice(i,1); store.set('gifts',this.list); this.render(); };
-      box.appendChild(el);
-    });
+      box.appendChild(el); });
   },
   raffle(){
     if(this.list.length===0){ toast('先去「🎁 礼物」加几件灵感吧～'); return; }
-    const pool=this.list.filter(g=>!g.done); const arr=pool.length?pool:this.list;
+    let pool=this.list.filter(g=>g.cat==='want' && !g.bought); if(!pool.length) pool=this.list.filter(g=>g.cat==='want'); if(!pool.length) pool=this.list;
     const ov=$('#giftRaffleOverlay'); const res=$('#giftRaffleResult');
     ov.classList.add('show'); res.textContent='？';
     let tick=0; const total=18; clearInterval(this._ri);
     this._ri=setInterval(()=>{
-      res.textContent=arr[Math.floor(Math.random()*arr.length)].t;
-      if(++tick>=total){ clearInterval(this._ri); const pick=arr[Math.floor(Math.random()*arr.length)].t; res.textContent=pick; res.classList.add('pop'); setTimeout(()=>res.classList.remove('pop'),400); }
+      res.textContent=pool[Math.floor(Math.random()*pool.length)].t;
+      if(++tick>=total){ clearInterval(this._ri); const pick=pool[Math.floor(Math.random()*pool.length)].t; res.textContent=pick; res.classList.add('pop'); setTimeout(()=>res.classList.remove('pop'),400); }
     },70);
   }
 };
@@ -1797,7 +1938,7 @@ function refreshLocks(){ if(typeof wheel!=='undefined') wheel.refreshLock(); if(
 /* 用原生 fetch 调 Supabase REST(PostgREST)，无需任何 CDN 库，国内加载更稳。
    需要在 Supabase 建项目 → SQL Editor 执行建表语句 → 填入 Project URL + anon key。
    表 gfsync：room(text 主键) / data(text) / updated_at(timestamptz)。数据用 upsert 覆盖同一房间行。 */
-const relay = {
+var relay = { // 用 var 声明以便在 wheel/praise 等模块 init 时已存在（避免 TDZ：提前引用报“before initialization”）
   room:null, role:null, _poll:null, _pushT:null, _last:null,
   conf(){ try{ return JSON.parse(localStorage.getItem('gfapp_sb_conf')||'null'); }catch(e){ return null; } },
   hasConf(){ const c=this.conf(); return !!(c&&c.url&&c.key); },
@@ -1815,6 +1956,13 @@ const relay = {
     this.room=room; this.role=role;
     if(syncRef) syncRef.role=role; // 让服务端/客户端权限门控生效
     if(this.hasConf()) this.ensure();
+  },
+  // 中转模式下，谁是可编辑的“主机”：server=主机可编辑、client=锁定；
+  // 这样奖品池/夸夸由唯一的主机维护，避免两台手机各自改导致不一致。
+  amHost(){
+    if(this.role==='server') return true;
+    if(this.role==='client') return false;
+    return true; // 未显式选角色（极少见）时默认本机可编辑
   },
   ensure(){
     if(!this.room || !this.hasConf()) return;
@@ -1863,6 +2011,9 @@ const relay = {
         const win = (lt>st) || (lt===st && lv>=sv);
         mergedData[k] = win ? lv : sv; mergedV[k]=Math.max(lt,st);
       }
+      // 若本地合并结果与服务器完全一致，则跳过本次上传，避免每 3 秒轮询都做无意义 upsert（省流量/省电）
+      try{ const sv = shared && shared.data ? JSON.stringify(shared.data) : null; const mv = JSON.stringify(mergedData);
+        if(sv===mv){ this.setStatus('【中转】已同步 💗'); return; } }catch(e){}
       const body=JSON.stringify({ room:this.room, data:JSON.stringify({data:mergedData, v:mergedV}), updated_at:new Date().toISOString() });
       const r=await fetch(this._base(), { method:'POST',
         headers:Object.assign({}, this._hdr(), { 'Prefer':'resolution=merge-duplicates' }), body });
@@ -1879,7 +2030,12 @@ const relay = {
       const rows=await r.json();
       if(rows&&rows[0]&&rows[0].data && rows[0].data!==this._last){
         this._last=rows[0].data;
-        try{ const snap=JSON.parse(rows[0].data); mergeSnap(snap); if(typeof refreshAll==='function') refreshAll(); if(typeof sos!=='undefined') sos._surface(); this.setStatus('【中转】已实时同步 💗'); }catch(e){}
+        try{ const snap=JSON.parse(rows[0].data);
+          const changed=mergeSnap(snap);
+          // 仅在数据真正变化时才全量重渲染，避免每 3 秒轮询都刷新整页（省电/不卡）
+          if(changed && typeof refreshAll==='function') refreshAll();
+          if(typeof sos!=='undefined') sos._surface();
+          this.setStatus('【中转】已实时同步 💗'); }catch(e){}
       }
     }catch(e){ this.setStatus('中转拉取失败：'+(e&&e.message||e)); }
   },
@@ -2096,8 +2252,8 @@ const sync = {
     this.conn=conn;
     conn.on('open', ()=>{ this.setStatus('已连接，实时同步中 💗'); conn.send(JSON.stringify({kind:'sync', data:snapshot()})); });
     conn.on('data', d=>{ try{ const msg=JSON.parse(d);
-      if(msg && msg.kind==='sync'){ this._remote=true; mergeSnap(msg.data); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); if(typeof sos!=='undefined') sos._surface(); }
-      else if(msg && msg.kind==='patch'){ this._remote=true; mergeSnap({data:msg.data, v:msg.v}); this._remote=false; this.setStatus('已实时同步 💗'); refreshAll(); if(typeof sos!=='undefined') sos._surface(); }
+      if(msg && msg.kind==='sync'){ this._remote=true; const changed=mergeSnap(msg.data); this._remote=false; this.setStatus('已实时同步 💗'); if(changed) refreshAll(); if(typeof sos!=='undefined') sos._surface(); }
+      else if(msg && msg.kind==='patch'){ this._remote=true; const changed=mergeSnap({data:msg.data, v:msg.v}); this._remote=false; this.setStatus('已实时同步 💗'); if(changed) refreshAll(); if(typeof sos!=='undefined') sos._surface(); }
       else if(msg && msg.kind==='sos' && typeof sos!=='undefined'){ sos.receive(msg.sos); }
     }catch(e){ this.setStatus('同步失败：数据解析错误'); } });
     conn.on('close', ()=>{ this.conn=null;
