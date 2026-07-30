@@ -672,6 +672,12 @@
       <button class="btn ghost" id="refreshMembers" style="padding:4px 10px;font-size:12px;margin-left:8px;">刷新</button>
     </div>
     <div class="sync-status" id="syncStatus">未连接</div>
+    <div class="sync-box" id="pushBox" style="border-color:#ffb3c6;background:#fff7fa;">
+      <div style="font-weight:700;margin-bottom:6px;">🔔 系统通知推送（纪念日 / 早安情话 / SOS）</div>
+      <div class="cal-note" style="margin:0 0 8px;">开启后：TA 触发 <b>SOS</b>、<b>纪念日</b>临近、每天 <b>早安情话</b> 都会收到系统通知（即便 app 在后台）。需先在 Supabase 部署推送函数，步骤见仓库内 <b>PUSH_README.md</b>。</div>
+      <button class="btn block" id="pushEnable">🔔 开启系统通知</button>
+      <div id="pushStatus" class="cal-note" style="margin:6px 0 0;color:#e84c88;min-height:0;"></div>
+    </div>
   </section>
 
   <!-- 情侣积分 · 成就 -->
@@ -1697,12 +1703,13 @@ const sos = {
     if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>done(p.coords.latitude,p.coords.longitude), ()=>done(null,null), {timeout:9000});
     else done(null,null);
   },
-  confirm(s){ this.alarm(); const time=new Date(s.t).toLocaleString('zh-CN');
+  confirm(s){ if(typeof push!=='undefined') push.sendSos(s); this.alarm(); const time=new Date(s.t).toLocaleString('zh-CN');
     const map=s.lat!=null?('\n地图：https://maps.google.com/?q='+s.lat+','+s.lon):'';
     const msg='我需要你 🆘\n时间：'+time+'\n地点：'+(s.loc||'')+map+(s.capsule?('\n\n'+s.capsule):'');
     $('#sosMsg').textContent=msg; $('#sosOverlay').classList.add('show'); },
   receive(s){ const list=store.get('sos',[]); if(list.some(x=>x.t===s.t)) return; // 去重：忽略自己发的/已收到的，避免重连重复弹窗
     list.push(s); store.set('sos',list); if(typeof home!=='undefined') home.render(); this.render(); this.alarm();
+    if(typeof push!=='undefined') push.localNotify('🆘 TA 需要你', (s.loc||'TA 需要你')+(s.capsule?('：'+s.capsule):''), 'sos-recv-'+s.t);
     toast('🆘 TA 需要你！'); },
   render(){ const box=$('#capsuleList'); if(!box) return; box.innerHTML='';
     const list=store.get('capsules',[]); const today=ymd(new Date());
@@ -1934,6 +1941,84 @@ const mood = {
     $('#moodText').textContent=(t&&t.text)||this.autoLine();
   }
 };
+/* ================= 系统通知 / Web Push ================= */
+/* 订阅存到 Supabase 的 push_subscriptions 表（复用中转配置）；SOS 触发时调 push-send
+   Edge Function 把系统通知推给同房间 TA（即便对方 app 后台/关闭）。纪念日/早安由
+   GitHub Actions 每日定时调 push-cron 推送。未配置后端(VAPID) 时仍可弹本地通知。 */
+const push = {
+  // 部署后端后，把你的 VAPID 公钥填到这里（生成方法见 PUSH_README.md）。
+  // 留空时仅支持“app 打开时的本地通知”，无法在 app 关闭时收真正推送。
+  VAPID_PUBLIC_KEY: '',
+  _base(){ const c=relay.conf(); return (c.url||'').replace(/\/+$/,'')+'/rest/v1/push_subscriptions'; },
+  _fn(){ const c=relay.conf(); return (c.url||'').replace(/\/+$/,'')+'/functions/v1'; },
+  _hdr(){ return relay._hdr(); },
+  room(){ try{ return relay.room || (relay.conf()&&relay.conf().room) || null; }catch(e){ return null; } },
+  supported(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); },
+  init(){ const b=$('#pushEnable'); if(b) b.onclick=()=>this.enable(); this.refresh(); },
+  refresh(){ const s=$('#pushStatus'); if(!s) return;
+    if(!this.supported()){ s.textContent='当前浏览器不支持系统通知'; return; }
+    if(!relay.hasConf()){ s.textContent='请先在上方配置并启用中转服务（Supabase）后再开启'; return; }
+    const enabled=store.get('push_enabled',false);
+    const perm=('Notification' in window)?Notification.permission:'denied';
+    if(enabled && perm==='granted'){ s.textContent='🔔 系统通知已开启'; }
+    else if(perm==='granted'){ s.textContent='已授权，点上方按钮完成开启'; }
+    else { s.textContent='点击「开启系统通知」并允许浏览器权限'; }
+  },
+  async enable(){
+    if(!this.supported()){ this._status('当前浏览器不支持系统通知'); return; }
+    if(!relay.hasConf()){ this._status('请先在上方配置并启用中转服务（Supabase）'); return; }
+    let perm; try{ perm=await Notification.requestPermission(); }catch(e){ perm='denied'; }
+    if(perm!=='granted'){ this._status('通知权限被拒绝，请在浏览器设置中允许本站通知'); return; }
+    try{
+      const reg=await navigator.serviceWorker.ready;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub){
+        if(!this.VAPID_PUBLIC_KEY){ store.set('push_enabled',true); this._status('✅ 已开启本地通知（未配置 VAPID，仅 app 打开时提醒）。按 PUSH_README.md 部署后端可解锁关站推送'); this.refresh(); return; }
+        sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:this._u8(this.VAPID_PUBLIC_KEY) });
+      }
+      await this._upload(sub);
+      store.set('push_enabled',true);
+      this._status('🔔 系统通知已开启！TA 触发 SOS / 纪念日 / 早安都会收到提醒');
+      this.refresh();
+    }catch(e){ this._status('开启失败：'+(e&&e.message||e)); }
+  },
+  async _upload(sub){
+    const room=this.room(); if(!room){ this._status('请先创建/加入同步房间，再开启通知'); return; }
+    const dev=relay._deviceId();
+    const payload={ room, device_id:dev, subscription: sub?(sub.toJSON?sub.toJSON():sub):null, updated_at:new Date().toISOString() };
+    const r=await fetch(this._base(), { method:'POST', headers:{...this._hdr(),'Prefer':'resolution=merge-duplicates'}, body:JSON.stringify(payload) });
+    if(!r.ok){ const t=await r.text(); this._status('订阅保存失败 HTTP '+r.status+'：'+(t||'').slice(0,120)); }
+  },
+  // SOS 触发时调用：通知后端把系统通知推给同房间的 TA（即便对方 app 后台/关闭）
+  async sendSos(s){
+    if(!this.VAPID_PUBLIC_KEY || !relay.hasConf()) return; // 无后端/无VAPID 不推，实时通道仍在
+    const room=this.room(); if(!room) return;
+    const body={ room, title:'🆘 '+ (store.get('gfapp_nickname')||'TA') +' 需要你！', body:('TA 触发了紧急求助，快看看！'+(s.loc?(' 位置：'+s.loc):'')), tag:'sos-'+s.t, url:location.href };
+    try{ await fetch(this._fn()+'/push-send', { method:'POST', headers:this._hdr(), body:JSON.stringify(body) }); }catch(e){}
+  },
+  // 本地系统通知（无需后端，app 打开时有效）
+  async localNotify(title, body, tag){
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.controller){ navigator.serviceWorker.controller.postMessage({type:'notify',title,body,tag}); }
+      else if(navigator.serviceWorker){ const reg=await navigator.serviceWorker.ready; await reg.showNotification(title,{body,tag,icon:'./icon-512.png'}); }
+      else { new Notification(title,{body,tag}); }
+    }catch(e){ try{ new Notification(title,{body,tag}); }catch(_){} }
+  },
+  // 每天首次打开 app 时：早安情话 + 今日纪念日提醒（本地通知，无需后端）
+  dailyCheck(){
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    const today=ymd(new Date());
+    const mk=store.get('push_morning_date',null);
+    if(mk!==today){ store.set('push_morning_date',today);
+      try{ const line=(typeof mood!=='undefined')?mood.autoLine():'今天也要开开心心呀'; this.localNotify('☀️ 早安，'+(store.get('herName','宝贝')), line, 'morning-'+today); }catch(e){}
+    }
+    try{ const annivs=store.get('anniversaries',[])||[]; annivs.forEach(a=>{ const c=annivCompute(a.date); if(c.isToday){ const k='push_anniv_'+a.date; if(store.get(k,null)!==today){ store.set(k,today); this.localNotify('💞 纪念日提醒','今天是 '+a.name+' 🎉','anniv-'+a.date); } } }); }catch(e){}
+  },
+  _u8(b64){ const pad=b64.length%4?('='.repeat(4-b64.length%4)):''; const s=atob(b64+pad); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; },
+  _status(t){ const s=$('#pushStatus'); if(s) s.textContent=t; }
+};
+
 mood.init();
 home.init();
 festival.init();
@@ -1942,6 +2027,8 @@ diary.init();
 praise.init();
 sos.init();
 task.init();
+push.init();
+if(typeof push!=='undefined') push.dailyCheck();
 
 /* ================= 生理期提醒 ================= */
 const period = {

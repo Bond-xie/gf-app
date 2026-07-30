@@ -44,3 +44,33 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
+// 页面发来的“本地通知”请求（无需后端，app 打开时有效）
+self.addEventListener('message', event => {
+  const d = event.data;
+  if (d && d.type === 'notify') {
+    event.waitUntil(self.registration.showNotification(d.title || '💗', { body: d.body || '', tag: d.tag, icon: './icon-512.png' }));
+  }
+});
+
+// 真正的 Web Push（后端 Edge Function 调用 web-push 推来）
+self.addEventListener('push', event => {
+  let data = { title: '💗 小软件', body: '' };
+  try { if (event.data) data = Object.assign(data, event.data.json()); } catch (e) { try { data.body = event.data.text(); } catch (_) {} }
+  event.waitUntil(self.registration.showNotification(data.title || '💗 小软件', {
+    body: data.body || '',
+    tag: data.tag,
+    icon: './icon-512.png',
+    data: data.url ? { url: data.url } : undefined
+  }));
+});
+
+// 点击通知：打开/聚焦 app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || './';
+  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ('focus' in c) { c.focus(); try { if (url && 'navigate' in c) c.navigate(url); } catch (_) {} return; } }
+    if (clients.openWindow) return clients.openWindow(url);
+  }));
+});
