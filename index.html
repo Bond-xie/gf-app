@@ -171,6 +171,19 @@
   /* 锁定（不可补签）的日期 */
   .cal .day.locked{opacity:.4;cursor:default;}
   .cal .day.locked.checked{opacity:.55;}
+  /* 可补签 / 补签审核中 的日期 */
+  .cal .day.missed{background:#fff4e6;border:1.5px dashed #ffb05a;color:#c9760a;cursor:pointer;}
+  .cal .day.missed::after{content:"补";position:absolute;font-size:9px;bottom:1px;right:2px;color:#ffb05a;}
+  .cal .day.pending{background:#fff0f5;border:1.5px dashed var(--pink);color:var(--pink-deep);cursor:pointer;}
+  .cal .day.pending::after{content:"审";position:absolute;font-size:9px;bottom:1px;right:2px;color:var(--pink-deep);}
+  .cal .day.rejected{opacity:.55;cursor:pointer;}
+  .sign-req{margin-top:14px;border-top:1px dashed var(--pink-soft);padding-top:10px;}
+  .sign-req-title{font-size:13px;color:var(--pink-deep);font-weight:700;margin-bottom:6px;}
+  .sign-req-item{display:flex;align-items:center;gap:8px;font-size:13px;background:#fff7fb;border:1px solid var(--pink-soft);border-radius:10px;padding:7px 10px;margin-bottom:6px;}
+  .sign-req-item .r-txt{flex:1;}
+  .sign-req-item .r-btn{border:none;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:#fff;background:var(--pink-deep);}
+  .sign-req-item .r-rej{background:#bbb;}
+  .sign-req-empty{font-size:12px;color:var(--text-soft);}
 
   /* 顶部每日运势条 */
   .fortune-strip{margin-top:10px;background:linear-gradient(90deg,#fff,#ffeef4);border:1px solid var(--pink-soft);
@@ -506,6 +519,11 @@
     </div>
     <div class="cal" id="cal"></div>
     <div class="cal-note" id="signNote">点今天的日期就能打卡啦 💗</div>
+    <div class="role-badge" id="signRole"></div>
+    <div class="sign-req" id="signReqBox" style="display:none;">
+      <div class="sign-req-title">📝 补签申请</div>
+      <div id="signReqList"></div>
+    </div>
   </section>
 
   <!-- 纪念日（多个） -->
@@ -664,13 +682,14 @@
   <!-- 今日任务 -->
   <section class="card" id="card-task">
     <h2><span class="ic">⚡</span>今日小任务</h2>
-    <div class="cal-note">每天自动挑一件甜甜的小事，一起完成吧 💕</div>
+    <div class="cal-note">每天自动挑几件甜甜的小事，再自己加几件，一起完成吧 💕</div>
     <div id="taskList" style="margin-top:12px;"></div>
     <div class="editor" style="margin-top:14px;">
       <div class="row">
         <input id="taskInput" placeholder="加一个专属任务，如：一起看星星" />
         <button class="btn ghost" id="addTask">添加</button>
       </div>
+      <button class="btn block" id="aiTask" style="margin-top:8px;">🎲 AI 随机来一个任务</button>
       <div class="chip-list" id="taskCustomList"></div>
     </div>
     <details class="log-box" id="taskDoneBox" style="margin-top:12px;" open>
@@ -825,7 +844,7 @@ function compressImg(file, cb){
 /* ---------- 同步相关工具 ---------- */
 function loadScript(src, cb){ const s=document.createElement('script'); s.src=src; s.onload=()=>cb&&cb();
   s.onerror=()=>{ toast('同步组件加载失败，可用「手动备份」同步'); cb&&cb(); }; document.head.appendChild(s); }
-const SYNC_ARRAY_KEYS = ['gfapp_records','gfapp_prizes','gfapp_foods','gfapp_gifts','gfapp_photos','gfapp_fortune_yi','gfapp_fortune_ji','gfapp_anniversaries','gfapp_achieved','gfapp_festivals','gfapp_diary','gfapp_praiseCustom','gfapp_sos','gfapp_capsules','gfapp_periodDates','gfapp_taskCustom','gfapp_taskDone'];
+const SYNC_ARRAY_KEYS = ['gfapp_records','gfapp_prizes','gfapp_foods','gfapp_gifts','gfapp_photos','gfapp_fortune_yi','gfapp_fortune_ji','gfapp_anniversaries','gfapp_achieved','gfapp_festivals','gfapp_diary','gfapp_praiseCustom','gfapp_sos','gfapp_capsules','gfapp_periodDates','gfapp_taskCustom','gfapp_taskDone','gfapp_signReq'];
 // 积分为每台设备各自的「宠爱值」，不同步（避免两端互相覆盖）；连接配置为本机私有，也不同步
 const SYNC_SKIP = ['gfapp_points','gfapp_sync_conf','gfapp_sb_conf','gfapp_wheel_date','gfapp_nickname','gfapp_device_id','gfapp_sync_v'];
 // —— 同步核心：集合（数组/对象）按元素「并集合并」，标量才「最后写入者胜」——
@@ -913,12 +932,18 @@ function mergeSnap(snap){
   }
   return changed;
 }
+// 判断本机当前是否为「主机 / 服务端」：中转模式下看 relay.amHost()，P2P 看 server/client 角色，无连接时本机即主机
+function isHost(){
+  try{ if(typeof relay!=='undefined' && relay.hasConf() && relay.room) return relay.amHost(); }catch(e){}
+  try{ if(typeof syncRef!=='undefined' && syncRef) return syncRef.role!=='client'; }catch(e){}
+  return true;
+}
 function refreshAll(){
   try{
     wheel.prizes = store.get('prizes', ['奶茶一杯','免家务一次','拥抱10秒','陪逛街','晚饭我做','按摩5分钟']); wheel.renderChips(); wheel.draw();
     menu.foods = store.get('foods', null); menu.normalizeFoods(false); menu.renderFoods();
     menu.log = store.get('menuLog', []); menu.renderLog();
-    sign.records = store.get('records', []); sign.render();
+    sign.records = store.get('records', []); sign.reqs = store.get('signReq', []); sign.render();
     love.list = store.get('anniversaries', []); love.render();
     fortune.yi = store.get('fortune_yi', ['撒娇','黏着你','吃甜品','说我爱你','一起散步','自拍','赖床','逛街','收礼物','窝沙发']);
     fortune.ji = store.get('fortune_ji', ['生气','冷战','熬夜','挑食','耍小性子','晚归','看手机不理我','皱眉']);
@@ -1061,7 +1086,7 @@ const wheel = {
     this.prizes.forEach((p,i)=>{
       const c=document.createElement('span'); c.className='chip';
       c.innerHTML=p+' <b data-i="'+i+'">✕</b>';
-      c.querySelector('b').onclick=()=>{ if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能删除奖品 🔒'); return; } this.prizes.splice(i,1); store.set('prizes',this.prizes); this.renderChips(); this.draw(); };
+      c.querySelector('b').onclick=()=>{ if(!this.canEdit()){ toast('只有服务端（创建房间的手机）能删除奖品 🔒'); return; } this.prizes.splice(i,1); store.set('prizes',this.prizes); markDeleted('gfapp_prizes', p); this.renderChips(); this.draw(); };
       box.appendChild(c);
     });
   },
@@ -1224,13 +1249,43 @@ menu.init();
 
 /* ================= 签到打卡 ================= */
 const sign = {
-  records:store.get('records',[]), viewY:new Date().getFullYear(), viewM:new Date().getMonth(),
+  records:store.get('records',[]), reqs:store.get('signReq',[]), viewY:new Date().getFullYear(), viewM:new Date().getMonth(),
+  myId: store.get('gfapp_device_id','me'),
   key(y,m,d){ const mm=(''+(m+1)).padStart(2,'0'), dd=(''+d).padStart(2,'0'); return y+'-'+mm+'-'+dd; },
   has(y,m,d){ return this.records.includes(this.key(y,m,d)); },
+  reqFor(date){ return this.reqs.filter(r=>r.date===date).sort((a,b)=>b.at-a.at)[0]; },
+  pushSync(){ try{ if(typeof relay!=='undefined' && relay.hasConf() && relay.room) relay.push(); }catch(e){} try{ if(typeof sync!=='undefined' && sync.conn && sync.conn.open) sync.send({kind:'sync', data:snapshot()}); }catch(e){} },
   init(){ this.render(); this.bind(); },
   bind(){
     $('#prevM').onclick=()=>{ this.viewM--; if(this.viewM<0){this.viewM=11;this.viewY--;} this.render(); };
     $('#nextM').onclick=()=>{ this.viewM++; if(this.viewM>11){this.viewM=0;this.viewY++;} this.render(); };
+  },
+  // 点某天：今天直接打卡；过去的未打卡日 → 补签（主机直签 / 客户端需申请主机同意）
+  tap(tkey, y, m, d){
+    if(this.has(y,m,d)){ $('#signNote').textContent='这一天已经打卡啦 💗'; return; }
+    if(isHost()){
+      this.records.push(tkey); $('#signNote').textContent='已补签 '+tkey+' 💗';
+      if(typeof achievements!=='undefined') achievements.add(1);
+      store.set('records',this.records); this.pushSync(); this.render();
+      return;
+    }
+    const exist=this.reqFor(tkey);
+    if(exist && exist.status==='pending'){ $('#signNote').textContent='补签申请审核中，等待主机同意 💌'; return; }
+    this.reqs.push({date:tkey, from:this.myId, status:'pending', at:Date.now()});
+    store.set('signReq',this.reqs); $('#signNote').textContent='已发送补签申请，等待主机同意 💌';
+    this.pushSync(); this.render();
+  },
+  approve(r){
+    if(!isHost()){ toast('只有主机（创建房间的手机）能审批补签 🔒'); return; }
+    r.status='approved';
+    if(!this.records.includes(r.date)){ this.records.push(r.date); if(typeof achievements!=='undefined') achievements.add(1); }
+    store.set('signReq',this.reqs); store.set('records',this.records);
+    toast('已同意补签 '+r.date+' 💗'); this.pushSync(); this.render();
+  },
+  reject(r){
+    if(!isHost()){ toast('只有主机（创建房间的手机）能审批补签 🔒'); return; }
+    r.status='rejected';
+    store.set('signReq',this.reqs); toast('已拒绝补签申请'); this.pushSync(); this.render();
   },
   render(){
     const y=this.viewY, m=this.viewM;
@@ -1242,23 +1297,60 @@ const sign = {
     for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='day empty'; cal.appendChild(e); }
     for(let d=1;d<=days;d++){
       const e=document.createElement('div'); e.className='day'; e.textContent=d;
-      if(this.has(y,m,d)) e.classList.add('checked');
-      const isToday=(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d);
-      if(isToday) e.classList.add('today');
       const tkey=this.key(y,m,d);
-      // 仅「今天」可打卡，过去/未来均锁定，不可补签
+      const isToday=(today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d);
+      const isFuture=(y>today.getFullYear())||(y===today.getFullYear()&&m>today.getMonth())||(y===today.getFullYear()&&m===today.getMonth()&&d>today.getDate());
+      const req=this.reqFor(tkey);
+      if(this.has(y,m,d)) e.classList.add('checked');
+      else if(isFuture){ e.classList.add('locked'); }
+      else if(isToday){ e.classList.add('today'); }
+      else if(req && req.status==='pending'){ e.classList.add('pending'); }
+      else if(req && req.status==='rejected'){ e.classList.add('rejected'); }
+      else { e.classList.add('missed'); }
+      // 绑定点击：今天=打卡/取消；过去未打卡=补签申请；未来=锁定
       if(isToday){
         e.onclick=()=>{
           if(this.records.includes(tkey)){ this.records=this.records.filter(x=>x!==tkey); $('#signNote').textContent='已取消今天的打卡 💔'; }
           else{ this.records.push(tkey); $('#signNote').textContent='打卡成功，爱你哟 💗'; if(typeof achievements!=='undefined') achievements.add(1); }
           store.set('records',this.records); this.render();
         };
-      } else {
-        e.classList.add('locked');
+      } else if(!isFuture){
+        e.onclick=()=>this.tap(tkey, y, m, d);
       }
       cal.appendChild(e);
     }
-    this.renderStats();
+    // 角色徽标
+    const rb=$('#signRole');
+    if(rb){ if(typeof relay!=='undefined' && relay.hasConf() && relay.room){ if(relay.amHost()){ rb.textContent='🏠 你是主机，可直接补签 / 审批'; rb.classList.add('host'); } else { rb.textContent='📱 你是客户端，补签需主机同意'; rb.classList.remove('host'); } } else { rb.textContent='未连接：本机可直接补签'; rb.classList.remove('host'); } }
+    $('#signNote').textContent = $('#signNote').textContent || '点今天的日期打卡；过去的日期点一下可申请补签 💗';
+    this.renderStats(); this.renderReqs();
+  },
+  renderReqs(){
+    const box=$('#signReqBox'), list=$('#signReqList'); if(!box||!list) return;
+    list.innerHTML='';
+    const pending=this.reqs.filter(r=>r.status==='pending');
+    const others=this.reqs.filter(r=>r.status!=='pending' || r.from!==this.myId);
+    if(this.reqs.length===0){ box.style.display='none'; return; }
+    box.style.display='';
+    // 主机：显示待审批（来自对方）；双方都显示自己的申请状态
+    this.reqs.slice().sort((a,b)=>b.at-a.at).forEach(r=>{
+      const dom=r.date.slice(5).replace('-','月')+'日';
+      const mine=(r.from===this.myId);
+      const el=document.createElement('div'); el.className='sign-req-item';
+      if(r.status==='pending' && !mine && isHost()){
+        el.innerHTML='<span class="r-txt">TA 申请补签 '+dom+'</span>';
+        const ok=document.createElement('button'); ok.className='r-btn'; ok.textContent='同意';
+        ok.onclick=()=>this.approve(r);
+        const no=document.createElement('button'); no.className='r-btn r-rej'; no.textContent='拒绝';
+        no.onclick=()=>this.reject(r);
+        el.appendChild(ok); el.appendChild(no);
+      } else {
+        const who=mine?'你':'TA';
+        const st=r.status==='pending'?'待主机同意 💌':(r.status==='approved'?'已同意 ✅':'已拒绝');
+        el.innerHTML='<span class="r-txt">'+who+' 申请补签 '+dom+'：'+st+'</span>';
+      }
+      list.appendChild(el);
+    });
   },
   renderStats(){
     const rec=this.records.slice().sort();
@@ -1658,6 +1750,8 @@ const sos = {
 
 /* ================= 今日任务 · AI 随机 ================= */
 const TASK_DEF = ['亲她一下','一起散步十分钟','一起拍张照','一起喝奶茶','一起看一集剧','给她按按肩','说一句真心话','牵手逛逛街','写张小纸条给她','一起听首歌','抱抱十秒','一起做个小手工','视频通话聊聊天','一起做顿饭','夸她一句好看','给她讲个冷笑话','一起玩个小游戏','睡前互道晚安'];
+// AI 随机任务池（点击「🎲 AI 随机来一个任务」时从中随机抽一条，加进今日专属任务）
+const TASK_AI_POOL = ['一起看一场日落','为对方手写一封信','一起做顿早餐','拍一张牵手照','互相按摩三分钟','说出三个喜欢对方的理由','一起规划下次旅行','为对方做一件小事','一起看一部老电影','给对方一个惊喜','睡前分享今天最开心的事','一起散步聊心事','给对方点一首歌','一起整理相册','写一张鼓励小纸条','一起泡杯奶茶聊聊','给对方梳一下头发','一起做份手账','视频里比个心','为对方读一段文字','一起做个小蛋糕','在便签上写句情话贴冰箱','一起看星星认星座','给对方准备一杯温水'];
 const task = {
   custom: store.get('taskCustom', []),
   done: store.get('taskDone', []),
@@ -1665,11 +1759,21 @@ const task = {
   get today(){ return ymd(new Date()); },
   combined(){ return this.custom.concat(TASK_DEF); },
   seed(){ return this.seedMap[this.today]!=null ? this.seedMap[this.today] : hashStr('T'+this.today); },
+  // 今日列表 = 所有「自主添加」的专属任务 + 由日期种子随机抽的 2 条默认小任务（保证每天有新意，且当天稳定）
   daily(){
-    const all=this.combined(); const rng=seedRand(this.seed());
-    const pool=all.map((_,i)=>i), idxs=[];
-    for(let i=0;i<Math.min(1,pool.length);i++){ const k=Math.floor(rng()*pool.length); idxs.push(pool.splice(k,1)[0]); }
-    return idxs.map(i=>({i, text:all[i]}));
+    const rng=seedRand(this.seed());
+    const defs=TASK_DEF.slice(); const extra=[];
+    for(let i=0;i<2 && defs.length;i++){ const k=Math.floor(rng()*defs.length); extra.push(defs.splice(k,1)[0]); }
+    return this.custom.concat(extra).map(text=>({text}));
+  },
+  // 🎲 AI 随机：从 TASK_AI_POOL 抽一条尚未添加的，加入自定义任务（持久化 + 同步）
+  aiTask(){
+    const avail=TASK_AI_POOL.filter(x=>!this.custom.includes(x));
+    if(avail.length===0){ toast('AI 任务池已经用完啦，明天再玩～'); return; }
+    const pick=avail[Math.floor(Math.random()*avail.length)];
+    this.custom.push(pick); store.set('taskCustom',this.custom);
+    this.renderChips(); this.render(); this.renderHome(); this.renderDone();
+    toast('AI 为你选了：'+pick+' 🎲');
   },
   _key(text){ return this.today+'#'+encodeURIComponent(text); },
   isDone(text){ return this.done.includes(this._key(text)); },
@@ -1694,6 +1798,7 @@ const task = {
   },
   bind(){
     $('#addTask').onclick=()=>{ const v=$('#taskInput').value.trim(); if(!v)return; this.custom.push(v); store.set('taskCustom',this.custom); $('#taskInput').value=''; this.renderChips(); this.render(); this.renderHome(); this.renderDone(); };
+    $('#aiTask').onclick=()=>this.aiTask();
     const cl=$('#clearTaskDone'); if(cl) cl.onclick=()=>{ if(confirm('确定清空全部已完成记录？')){ this.done=[]; store.set('taskDone',this.done); this.render(); this.renderHome(); this.renderDone(); } };
   },
   renderChips(){
@@ -1721,7 +1826,7 @@ const task = {
       box.appendChild(d);
     });
     const prog=document.createElement('div'); prog.style.cssText='font-size:12px;color:#ff9bb3;margin-top:6px;text-align:center;';
-    prog.textContent= list.length ? (this.isDone(list[0].i)?'今日任务已完成，超甜！💕':'今天一起完成它吧～') : '今天没有任务';
+    prog.textContent= list.length ? (this.isDone(list[0].text)?'今日任务已完成，超甜！💕':'今天一起完成它吧～') : '今天没有任务';
     box.appendChild(prog);
   },
   init(){ this.bind(); this.renderChips(); this.render(); this.renderDone(); }
